@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Debug My Integration",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/your_integration_debug_script.py",
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ]
+}

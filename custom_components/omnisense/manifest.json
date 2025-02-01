@@ -1,0 +1,14 @@
+{
+  "domain": "OmniSense",
+  "name": "OmniSense Temperature Scraper",
+  "documentation": "https://www.omnisense.com/",
+  "requirements": [
+    "beautifulsoup4==4.9.3",
+    "requests==2.28.1"
+  ],
+  "dependencies": [],
+  "codeowners": [
+    "@sslivins"
+  ],
+  "version": "0.1.0"
+}
