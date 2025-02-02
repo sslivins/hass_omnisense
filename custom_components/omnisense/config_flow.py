@@ -18,7 +18,7 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_USERNAME): str,
             vol.Required(CONF_PASSWORD): str,
             vol.Optional("site_name", default="Home"): str,
-            vol.Optional("sensor_ids", default=[]): list,
+            vol.Optional("sensor_ids", default=[]): vol.All(vol.Coerce(list), [str])
         })
         return self.async_show_form(
             step_id="user", data_schema=schema, errors=errors
