@@ -11,5 +11,6 @@
   "codeowners": [
     "@sslivins"
   ],
+  "config_flow": true,
   "version": "0.1.1"  
 }
