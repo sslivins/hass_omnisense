@@ -1,5 +1,5 @@
 {
-  "domain": "OmniSense",
+  "domain": "omnisense",
   "name": "OmniSense",
   "documentation": "https://github.com/sslivins/hass_omnisense",
   "requirements": [
