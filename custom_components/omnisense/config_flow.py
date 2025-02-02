@@ -4,7 +4,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
 
-DOMAIN = "hass_omnisense"  # make sure this matches your integration's domain in manifest.json
+DOMAIN = "omnisense"
 
 class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
