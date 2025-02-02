@@ -18,7 +18,6 @@ CONF_PASSWORD = "password"         # Login password
 
 # Defaults
 DEFAULT_NAME = "Scraped Temperature Sensors"
-DEFAULT_JOB_SITES_URL = "https://www.omnisense.com/site_select.asp"
 DEFAULT_SENSOR_IDS = []   # if provided, filter sensors by these IDs (if empty, retrieve all)
 
 # Fixed URLs
@@ -124,7 +123,7 @@ class OmniSenseSensor(SensorEntity):
         """
         if self._site_name:
             try:
-                response = session.get(DEFAULT_JOB_SITES_URL, timeout=10)
+                response = session.get(SITE_LIST_URL, timeout=10)
                 if response.status_code != 200:
                     _LOGGER.error("Error fetching job sites page: HTTP %s", response.status_code)
                     return None

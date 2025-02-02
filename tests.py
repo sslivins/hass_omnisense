@@ -1,6 +1,9 @@
 # test_integration.py
 import os
+from dotenv import load_dotenv
 from custom_components.omnisense.sensor import OmniSenseSensor
+
+load_dotenv()
 
 # Create a test configuration dictionary
 config = {

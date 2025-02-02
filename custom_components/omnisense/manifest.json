@@ -1,14 +1,15 @@
 {
   "domain": "OmniSense",
-  "name": "OmniSense Temperature Scraper",
-  "documentation": "https://www.omnisense.com/",
+  "name": "OmniSense",
+  "documentation": "https://github.com/sslivins/hass_omnisense",
   "requirements": [
-    "beautifulsoup4==4.9.3",
-    "requests==2.28.1"
+    "beautifulsoup4==4.12.3",
+    "Requests==2.32.3",
+    "voluptuous==0.13.1"    
   ],
   "dependencies": [],
   "codeowners": [
     "@sslivins"
   ],
-  "version": "0.1.0"
+  "version": "0.1.0"  
 }
