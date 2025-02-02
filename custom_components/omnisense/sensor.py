@@ -24,7 +24,7 @@ DEFAULT_SENSOR_IDS = []   # if provided, filter sensors by these IDs (if empty, 
 LOGIN_URL = "https://www.omnisense.com/user_login.asp"
 SITE_LIST_URL = "https://www.omnisense.com/site_select.asp"
 
-# Extend the platform schema
+# Extend the platform schema (for YAML configuration)
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_SITE_NAME): cv.string,
     vol.Optional(CONF_SENSOR_IDS, default=DEFAULT_SENSOR_IDS): vol.All(cv.ensure_list, [cv.string]),
@@ -33,7 +33,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
-    """Set up the Omnisense sensor."""
+    """Set up the Omnisense sensor from YAML configuration."""
     site_name = config.get(CONF_SITE_NAME)
     sensor_ids = config.get(CONF_SENSOR_IDS)
     username = config.get(CONF_USERNAME) or os.environ.get("OMNISENSE_USERNAME")
@@ -70,6 +70,7 @@ class OmniSenseSensor(SensorEntity):
         self._username = username
         self._password = password
         self._site_name = site_name
+        # Normalize sensor_id to a list: if provided as a list use it; if a single value, wrap it; otherwise empty.
         self._sensor_ids = sensor_id if isinstance(sensor_id, list) else ([sensor_id] if sensor_id else [])
         self._state = None
         self._attributes = {}
@@ -227,3 +228,23 @@ class OmniSenseSensor(SensorEntity):
                 self._attributes = {"sensors": sensors}
         except requests.RequestException as err:
             _LOGGER.error("Error fetching sensor data: %s", err)
+
+# --- Config Entry Setup for UI Integration ---
+async def async_setup_entry(hass, entry, async_add_entities):
+    """Set up Omnisense sensor(s) from a config entry."""
+    data = entry.data
+    site_name = data.get("site_name", "Home")
+    sensor_ids = data.get("sensor_ids", [])
+    username = data.get("username")
+    password = data.get("password")
+
+    entities = []
+    if sensor_ids:
+        for sid in sensor_ids:
+            sensor_name = f"{site_name.capitalize()} Sensor {sid}"
+            entities.append(OmniSenseSensor(sensor_name, username, password, site_name, sensor_id=sid))
+    else:
+        entities.append(OmniSenseSensor(site_name.capitalize(), username, password, site_name, sensor_id=None))
+
+    async_add_entities(entities)
+    return True
