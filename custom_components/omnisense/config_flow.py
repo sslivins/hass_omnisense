@@ -56,15 +56,18 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # Create sensor options mapping sensor IDs to labels.
         sensor_options = {sid: f"{sid} - {info.get('description', '')}" for sid, info in sensors.items()}
         # Use the selector helper to render a multi-select as a list.
+        # schema = vol.Schema({
+        #     vol.Required("selected_sensors"): selector({
+        #         "select": {
+        #             "multiple": True,
+        #             "options": sensor_options,
+        #             "mode": "list",  # 'list' mode shows checkboxes in a scrolling list.
+        #         }
+        #     })
+        # })
         schema = vol.Schema({
-            vol.Required("selected_sensors"): selector({
-                "select": {
-                    "multiple": True,
-                    "options": sensor_options,
-                    "mode": "list",  # 'list' mode shows checkboxes in a scrolling list.
-                }
-            })
-        })
+            vol.Required("selected_sensors", default=""): str,
+        })        
         return self.async_show_form(step_id="sensors", data_schema=schema, errors=errors)
 
     def _fetch_sensors(self):
@@ -73,6 +76,9 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         Returns:
             A dictionary mapping sensor IDs to a dictionary containing at least a 'description'.
         """
+        
+        _LOGGER.debug("Fetched sensors: %s", sensors)
+        
         session = requests.Session()
         payload = {
             "userId": self.username,
