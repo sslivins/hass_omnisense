@@ -34,9 +34,6 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_PASSWORD): cv.string,
 })
 
-#
-# --- YAML Setup (Legacy) ---
-#
 def setup_platform(hass, config, add_entities, discovery_info=None):
     """Set up the Omnisense sensor from YAML configuration."""
     site_name = config.get(CONF_SITE_NAME)
@@ -57,17 +54,9 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         entities.append(OmniSenseSensor(site_name.capitalize(), username, password, site_name, sensor_id=None))
     add_entities(entities, True)
 
-
-#
-# --- Helper Function: Data Fetching ---
-#
 def _fetch_sensor_data(username, password, site_name, sensor_ids):
-    """Fetch sensor data from Omnisense and return a dictionary of sensor data.
-    
-    This function runs synchronously and is intended to be called in an executor.
-    """
+    """Fetch sensor data from Omnisense and return a dictionary of sensor data."""
     session = requests.Session()
-    # --- Login ---
     payload = {
         "userId": username,
         "userPass": password,
@@ -82,7 +71,6 @@ def _fetch_sensor_data(username, password, site_name, sensor_ids):
         _LOGGER.error("Error during login: %s", err)
         return {}
 
-    # --- Determine Sensor Page URL ---
     try:
         response = session.get(SITE_LIST_URL, timeout=10)
         if response.status_code != 200:
@@ -101,14 +89,12 @@ def _fetch_sensor_data(username, password, site_name, sensor_ids):
         _LOGGER.error("Error determining sensor page URL: %s", err)
         return {}
 
-    # --- Fetch and Parse Sensor Data ---
     try:
         response = session.get(sensor_page_url, timeout=10)
         if response.status_code != 200:
             raise Exception("Error fetching sensor data.")
         soup = BeautifulSoup(response.text, "html.parser")
         sensors = {}
-        # Iterate over each table that holds sensor data.
         for table in soup.select("table.sortable.table"):
             sensor_type = None
             table_id = table.get("id", "")
@@ -147,9 +133,6 @@ def _fetch_sensor_data(username, password, site_name, sensor_ids):
         _LOGGER.error("Error fetching/parsing sensor data: %s", err)
         return {}
 
-#
-# --- Config Entry Setup (UI Integration) using DataUpdateCoordinator ---
-#
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Omnisense sensor(s) from a config entry using DataUpdateCoordinator."""
     data = entry.data
@@ -165,10 +148,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
         update_method=lambda: hass.async_add_executor_job(
             _fetch_sensor_data, username, password, site_name, sensor_ids
         ),
-        update_interval=timedelta(minutes=60),
+        update_interval=timedelta(minutes=60),  # Change this value to update less frequently
     )
 
-    # Fetch initial data.
     await coordinator.async_config_entry_first_refresh()
 
     entities = []
@@ -182,9 +164,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
     async_add_entities(entities)
     return True
 
-#
-# --- Sensor Entity Class using Coordinator ---
-#
 class OmniSenseSensor(SensorEntity):
     """Sensor entity that retrieves its data from a DataUpdateCoordinator."""
 
@@ -200,6 +179,17 @@ class OmniSenseSensor(SensorEntity):
     def name(self):
         """Return the sensor name."""
         return self._name
+
+    @property
+    def unique_id(self):
+        """Return a unique ID for this sensor entity.
+        
+        If there is exactly one sensor ID, we can use that (combined with the site name).
+        Otherwise, return None so that the entity is not user-manageable.
+        """
+        if self._sensor_ids and len(self._sensor_ids) == 1:
+            return f"{self._site_name.lower()}_{self._sensor_ids[0].lower()}"
+        return None
 
     @property
     def state(self):
