@@ -1,5 +1,6 @@
 # config_flow.py
 import re
+import logging
 import voluptuous as vol
 import requests
 from bs4 import BeautifulSoup
@@ -8,6 +9,8 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.selector import selector
+
+_LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "omnisense"  # Must match the domain in your manifest.json
 
