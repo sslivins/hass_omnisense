@@ -62,8 +62,22 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         _LOGGER.error("Omnisense: sensor options: %s", sensor_options)
         # Use the selector helper to render a multi-select as a list.
         dummy_options = {"sensor1": "Sensor 1", "sensor2": "Sensor 2"}
+        # schema = vol.Schema({
+        #     vol.Required("selected_sensors", default=list(dummy_options.keys())): cv.multi_select(dummy_options)
+        # })
+        
+        # schema = vol.Schema({
+        #     vol.Required("selected_sensors"): cv.multi_select(sensor_options)
+        # })  
+        
         schema = vol.Schema({
-            vol.Required("selected_sensors", default=list(dummy_options.keys())): cv.multi_select(dummy_options)
+            vol.Required("selected_sensors"):selector.SelectSelector(
+              selector.SelectSelectorConfig(
+                options=dummy_options,
+                multiple=False,
+                mode=selector.SelectSelectorMode.LIST,
+              ),
+            ),      
         })
         
         # schema = vol.Schema({
