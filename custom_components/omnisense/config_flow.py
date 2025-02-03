@@ -6,6 +6,8 @@ from bs4 import BeautifulSoup
 
 from homeassistant import config_entries
 from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
+import homeassistant.helpers.config_validation as cv
+
 
 DOMAIN = "omnisense"  # Must match the domain in your manifest.json
 
