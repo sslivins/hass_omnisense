@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from homeassistant import config_entries
 from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
 import homeassistant.helpers.config_validation as cv
-
+from homeassistant.helpers.selector import selector
 
 DOMAIN = "omnisense"  # Must match the domain in your manifest.json
 
@@ -18,11 +18,10 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle the initial step where the user enters credentials and site name."""
         errors = {}
         if user_input is not None:
-            # Save the credentials and site name to use in the next step.
+            # Save credentials and site name for use in the next step.
             self.username = user_input.get(CONF_USERNAME)
             self.password = user_input.get(CONF_PASSWORD)
             self.site_name = user_input.get("site_name", "Home")
-            # Proceed to the sensor selection step.
             return await self.async_step_sensors()
         
         schema = vol.Schema({
@@ -48,18 +47,23 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }
                 return self.async_create_entry(title="Omnisense", data=data)
         
-        # Fetch sensor list using the provided credentials.
+        # Fetch sensor list using provided credentials.
         sensors = await self.hass.async_add_executor_job(self._fetch_sensors)
         if not sensors:
             errors["base"] = "Could not retrieve sensor list. Please verify your credentials and site name."
-            # Present an empty form (or you could allow the user to retry the user step)
             return self.async_show_form(step_id="sensors", data_schema=vol.Schema({}), errors=errors)
         
-        # Create a multi-select schema. Home Assistant provides cv.multi_select in recent versions.
-        # The sensor options are a dictionary mapping sensor ID to a label (e.g. "2F360025 - Dining Room - BDL").
-        sensor_options = {sid: f"{sid} - {info.get('description','')}" for sid, info in sensors.items()}
+        # Create sensor options mapping sensor IDs to labels.
+        sensor_options = {sid: f"{sid} - {info.get('description', '')}" for sid, info in sensors.items()}
+        # Use the selector helper to render a multi-select as a list.
         schema = vol.Schema({
-            vol.Required("selected_sensors"): cv.multi_select(sensor_options)
+            vol.Required("selected_sensors"): selector({
+                "select": {
+                    "multiple": True,
+                    "options": sensor_options,
+                    "mode": "list",  # 'list' mode shows checkboxes in a scrolling list.
+                }
+            })
         })
         return self.async_show_form(step_id="sensors", data_schema=schema, errors=errors)
 
@@ -80,7 +84,7 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             response = session.post("https://www.omnisense.com/user_login.asp", data=payload, timeout=10)
             if response.status_code != 200 or "User Log-In" in response.text:
                 return {}
-        except Exception as err:
+        except Exception:
             return {}
         try:
             response = session.get("https://www.omnisense.com/site_select.asp", timeout=10)
@@ -105,7 +109,6 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             soup = BeautifulSoup(response.text, "html.parser")
             sensors = {}
             for table in soup.select("table.sortable.table"):
-                # We can ignore sensor type here unless you want to include it in the selection label.
                 for row in table.select("tr.sensorTable"):
                     tds = row.find_all("td")
                     if len(tds) >= 10:
