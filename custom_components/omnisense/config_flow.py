@@ -2,6 +2,7 @@
 import re
 import logging
 import voluptuous as vol
+from voluptuous_serialize import convert
 import requests
 from bs4 import BeautifulSoup
 
@@ -60,11 +61,13 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         sensor_options = {sid: f"{sid} - {info.get('description', '')}" for sid, info in sensors.items()}
         _LOGGER.error("Omnisense: sensor options: %s", sensor_options)
         # Use the selector helper to render a multi-select as a list.
+        dummy_options = {"sensor1": "Sensor 1", "sensor2": "Sensor 2"}
         schema = vol.Schema({
             vol.Required("selected_sensors"): selector({
                 "select": {
                     "multiple": True,
-                    "options": sensor_options,
+                    "options": dummy_options,  # Make sure sensor_options is a dict of str: str
+                    "mode": "list",  # Forces a list view that is usually larger and scrollable
                 }
             })
         })
