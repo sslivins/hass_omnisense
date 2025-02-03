@@ -80,8 +80,6 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             A dictionary mapping sensor IDs to a dictionary containing at least a 'description'.
         """
         
-        _LOGGER.debug("Fetched sensors: %s", sensors)
-        
         session = requests.Session()
         payload = {
             "userId": self.username,
@@ -124,6 +122,9 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         sid = tds[0].get_text(strip=True)
                         desc = tds[1].get_text(strip=True)
                         sensors[sid] = {"description": desc}
+                        
+            _LOGGER.debug("Fetched sensors: %s", sensors)                        
+                        
             return sensors
         except Exception:
             return {}
