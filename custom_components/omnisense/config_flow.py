@@ -1,5 +1,8 @@
 # config_flow.py
+import re
 import voluptuous as vol
+import requests
+from bs4 import BeautifulSoup
 
 from homeassistant import config_entries
 from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
@@ -10,23 +13,103 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     async def async_step_user(self, user_input=None):
+        """Handle the initial step where the user enters credentials and site name."""
         errors = {}
         if user_input is not None:
-            # Convert the sensor_ids input (a comma separated string) into a list.
-            sensor_ids_str = user_input.get("sensor_ids", "")
-            if sensor_ids_str:
-                user_input["sensor_ids"] = [s.strip() for s in sensor_ids_str.split(",") if s.strip()]
-            else:
-                user_input["sensor_ids"] = []
-            return self.async_create_entry(title="Omnisense", data=user_input)
-
+            # Save the credentials and site name to use in the next step.
+            self.username = user_input.get(CONF_USERNAME)
+            self.password = user_input.get(CONF_PASSWORD)
+            self.site_name = user_input.get("site_name", "Home")
+            # Proceed to the sensor selection step.
+            return await self.async_step_sensors()
+        
         schema = vol.Schema({
             vol.Required(CONF_USERNAME): str,
             vol.Required(CONF_PASSWORD): str,
             vol.Optional("site_name", default="Home"): str,
-            # Use a string input for sensor_ids. The user can enter a comma-separated list.
-            vol.Optional("sensor_ids", default=""): str,
         })
-        return self.async_show_form(
-            step_id="user", data_schema=schema, errors=errors
-        )
+        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
+
+    async def async_step_sensors(self, user_input=None):
+        """Handle the sensor selection step."""
+        errors = {}
+        if user_input is not None:
+            selected = user_input.get("selected_sensors", [])
+            if not selected:
+                errors["base"] = "At least one sensor must be selected."
+            else:
+                data = {
+                    CONF_USERNAME: self.username,
+                    CONF_PASSWORD: self.password,
+                    "site_name": self.site_name,
+                    "sensor_ids": selected,
+                }
+                return self.async_create_entry(title="Omnisense", data=data)
+        
+        # Fetch sensor list using the provided credentials.
+        sensors = await self.hass.async_add_executor_job(self._fetch_sensors)
+        if not sensors:
+            errors["base"] = "Could not retrieve sensor list. Please verify your credentials and site name."
+            # Present an empty form (or you could allow the user to retry the user step)
+            return self.async_show_form(step_id="sensors", data_schema=vol.Schema({}), errors=errors)
+        
+        # Create a multi-select schema. Home Assistant provides cv.multi_select in recent versions.
+        # The sensor options are a dictionary mapping sensor ID to a label (e.g. "2F360025 - Dining Room - BDL").
+        sensor_options = {sid: f"{sid} - {info.get('description','')}" for sid, info in sensors.items()}
+        schema = vol.Schema({
+            vol.Required("selected_sensors"): cv.multi_select(sensor_options)
+        })
+        return self.async_show_form(step_id="sensors", data_schema=schema, errors=errors)
+
+    def _fetch_sensors(self):
+        """Fetch sensor list using the stored credentials and site name.
+        
+        Returns:
+            A dictionary mapping sensor IDs to a dictionary containing at least a 'description'.
+        """
+        session = requests.Session()
+        payload = {
+            "userId": self.username,
+            "userPass": self.password,
+            "btnAct": "Log-In",
+            "target": ""
+        }
+        try:
+            response = session.post("https://www.omnisense.com/user_login.asp", data=payload, timeout=10)
+            if response.status_code != 200 or "User Log-In" in response.text:
+                return {}
+        except Exception as err:
+            return {}
+        try:
+            response = session.get("https://www.omnisense.com/site_select.asp", timeout=10)
+            if response.status_code != 200:
+                return {}
+            soup = BeautifulSoup(response.text, "html.parser")
+            site_link = soup.find("a", text=lambda t: t and t.strip().lower() == self.site_name.lower())
+            if not site_link:
+                return {}
+            onclick = site_link.get("onclick", "")
+            match = re.search(r"ShowSiteDetail\('(\d+)'\)", onclick)
+            if not match:
+                return {}
+            site_number = match.group(1)
+            sensor_page_url = f"https://www.omnisense.com/sensor_select.asp?siteNbr={site_number}"
+        except Exception:
+            return {}
+        try:
+            response = session.get(sensor_page_url, timeout=10)
+            if response.status_code != 200:
+                return {}
+            soup = BeautifulSoup(response.text, "html.parser")
+            sensors = {}
+            for table in soup.select("table.sortable.table"):
+                # We can ignore sensor type here unless you want to include it in the selection label.
+                for row in table.select("tr.sensorTable"):
+                    tds = row.find_all("td")
+                    if len(tds) >= 10:
+                        sid = tds[0].get_text(strip=True)
+                        desc = tds[1].get_text(strip=True)
+                        sensors[sid] = {"description": desc}
+            return sensors
+        except Exception:
+            return {}
