@@ -70,25 +70,28 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         #     vol.Required("selected_sensors"): cv.multi_select(sensor_options)
         # })  
         
+        # schema = vol.Schema({
+        #     vol.Required("selected_sensors"):selector.SelectSelector(
+        #       selector.SelectSelectorConfig(
+        #         options=dummy_options,
+        #         multiple=False,
+        #         mode=selector.SelectSelectorMode.LIST,
+        #       ),
+        #     ),      
+        # })
+        
         schema = vol.Schema({
-            vol.Required("selected_sensors"):selector.SelectSelector(
-              selector.SelectSelectorConfig(
-                options=dummy_options,
-                multiple=False,
-                mode=selector.SelectSelectorMode.LIST,
-              ),
-            ),      
+            vol.Required("selected_sensors"): selector({
+                "select": {
+                    "multiple": True,
+                    "options": dummy_options,  # Make sure sensor_options is a dict of str: str
+                    "mode": "list",  # Forces a list view that is usually larger and scrollable
+                }
+            })
         })
         
-        # schema = vol.Schema({
-        #     vol.Required("selected_sensors"): selector({
-        #         "select": {
-        #             "multiple": True,
-        #             "options": dummy_options,  # Make sure sensor_options is a dict of str: str
-        #             "mode": "list",  # Forces a list view that is usually larger and scrollable
-        #         }
-        #     })
-        # })
+        print("schema: ", convert(schema))
+        
         # schema = vol.Schema({
         #     vol.Required("selected_sensors", default=""): str,
         # })        
