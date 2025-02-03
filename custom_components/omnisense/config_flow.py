@@ -58,6 +58,7 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         
         # Create sensor options mapping sensor IDs to labels.
         sensor_options = {sid: f"{sid} - {info.get('description', '')}" for sid, info in sensors.items()}
+        _LOGGER.error("Omnisense: sensor options: %s", sensor_options)
         # Use the selector helper to render a multi-select as a list.
         schema = vol.Schema({
             vol.Required("selected_sensors"): selector({
