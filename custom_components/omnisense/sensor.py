@@ -34,26 +34,6 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_PASSWORD): cv.string,
 })
 
-def setup_platform(hass, config, add_entities, discovery_info=None):
-    """Set up the Omnisense sensor from YAML configuration."""
-    site_name = config.get(CONF_SITE_NAME)
-    sensor_ids = config.get(CONF_SENSOR_IDS)
-    username = config.get(CONF_USERNAME) or os.environ.get("OMNISENSE_USERNAME")
-    password = config.get(CONF_PASSWORD) or os.environ.get("OMNISENSE_PASSWORD")
-
-    if not username or not password:
-        _LOGGER.error("Missing credentials: please supply username and password via configuration or environment variables")
-        return
-
-    entities = []
-    if sensor_ids:
-        for sid in sensor_ids:
-            sensor_name = f"{site_name.capitalize()} Sensor {sid}"
-            entities.append(OmniSenseSensor(sensor_name, username, password, site_name, sensor_id=sid))
-    else:
-        entities.append(OmniSenseSensor(site_name.capitalize(), username, password, site_name, sensor_id=None))
-    add_entities(entities, True)
-
 def _fetch_sensor_data(username, password, site_name, sensor_ids):
     """Fetch sensor data from Omnisense and return a dictionary of sensor data."""
     session = requests.Session()
