@@ -1,10 +1,10 @@
 {
-  "title": "Omnisense Configuration",  
+  "title": "Omnisense",  
   "config": {
     "step": {
       "user": {
         "title": "Omnisense Login Credentials",
-        "description": "Please enter your username and password to proceed to the next step.",
+        "description": "Please enter your OmniSense website username and password to proceed to the next step.",
         "data": {
           "username": "Username",
           "password": "Password"

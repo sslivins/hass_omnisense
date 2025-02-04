@@ -154,12 +154,12 @@ async def async_setup_entry(hass, entry, async_add_entities):
     await coordinator.async_config_entry_first_refresh()
 
     entities = []
-    if sensor_ids:
-        for sid in sensor_ids:
-            sensor_name = f"{site_name.capitalize()} Sensor {sid}"
+    sensors_data = coordinator.data or {}
+    for sid, sensor_info in sensors_data.items():
+        if not sensor_ids or sid in sensor_ids:
+            sensor_name = f"{site_name.capitalize()} - {sensor_info.get('description', 'Unknown') - {sid}}"
             entities.append(OmniSenseSensor(sensor_name, site_name, coordinator, sensor_id=sid))
-    else:
-        entities.append(OmniSenseSensor(site_name.capitalize(), site_name, coordinator, sensor_id=None))
+
 
     async_add_entities(entities)
     return True
