@@ -107,6 +107,8 @@ def _fetch_sensor_data(username, password, site_name, sensor_ids):
                         "wood_pct": tds[8].get_text(strip=True),
                         "battery_voltage": tds[9].get_text(strip=True),
                         "sensor_type": sensor_type,
+                        "sensor_id": sid,
+                        "site_name": site_name,
                     }
         return sensors
     except Exception as err:
