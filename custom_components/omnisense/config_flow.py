@@ -10,7 +10,7 @@ import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
 
-DOMAIN = "omnisense"
+from .const import DOMAIN
 
 class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
