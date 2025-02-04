@@ -14,10 +14,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = entry.data
 
-    # If your integration has a sensor platform, forward the setup:
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setups(entry, "sensor")
-    )
+    await hass.config_entries.async_forward_entry_setups(entry, "sensor")
 
     return True
 
