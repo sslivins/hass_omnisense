@@ -162,7 +162,7 @@ class OmniSenseSensor(SensorEntity):
         self._site_name = site_name
         # Normalize sensor_id to a list.
         #self._sensor_id = sensor_id if isinstance(sensor_id, list) else ([sensor_id] if sensor_id else [])
-        _LOGGER.error(f"sensor_id: {sensor_id}")
+        _LOGGER.info(f"sensor_id: {sensor_id}")
         self._sensor_id = sensor_id
         self.coordinator = coordinator
 
@@ -207,17 +207,17 @@ class OmniSenseSensor(SensorEntity):
             return {"sensors": {sid: data[sid] for sid in self._sensor_id if sid in data}}
         return {"sensors": data}
 
-    @property
-    def device_info(self):
-        """Return device information about this sensor."""
-        return {
-            "identifiers": {(DOMAIN, self._sensor_id)},
-            "name": f"{self._site_name} Sensor {self._sensor_id}",
-            "manufacturer": "OmniSense",
-            "model": "Sensor Model XYZ",  # Replace with actual model if available
-            "sw_version": "1.0",
-            "via_device": (DOMAIN, self._site_name),
-        }        
+    # @property
+    # def device_info(self):
+    #     """Return device information about this sensor."""
+    #     return {
+    #         "identifiers": {(DOMAIN, self._sensor_id)},
+    #         "name": f"{self._site_name} Sensor {self._sensor_id}",
+    #         "manufacturer": "OmniSense",
+    #         "model": "Sensor Model XYZ",  # Replace with actual model if available
+    #         "sw_version": "1.0",
+    #         "via_device": (DOMAIN, self._site_name),
+    #     }        
 
     async def async_update(self):
         """Request an update from the coordinator."""
