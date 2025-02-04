@@ -157,7 +157,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     sensors_data = coordinator.data or {}
     for sid, sensor_info in sensors_data.items():
         if not sensor_ids or sid in sensor_ids:
-            sensor_name = f"{site_name.capitalize()} - {sensor_info.get('description', 'Unknown') - {sid}}"
+            sensor_name = f"{sensor_info.get('description', 'Unknown')} - {site_name.capitalize()} - {sid}"
             entities.append(OmniSenseSensor(sensor_name, site_name, coordinator, sensor_id=sid))
 
 
