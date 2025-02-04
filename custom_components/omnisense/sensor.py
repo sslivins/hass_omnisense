@@ -161,7 +161,8 @@ class OmniSenseSensor(SensorEntity):
         self._name = name
         self._site_name = site_name
         # Normalize sensor_id to a list.
-        self._sensor_id = sensor_id if isinstance(sensor_id, list) else ([sensor_id] if sensor_id else [])
+        #self._sensor_id = sensor_id if isinstance(sensor_id, list) else ([sensor_id] if sensor_id else [])
+        self._sensor_id = sensor_id
         self.coordinator = coordinator
 
     @property
