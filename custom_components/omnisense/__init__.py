@@ -8,10 +8,6 @@ _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "omnisense"
 
-async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Set up the Omnisense integration from configuration.yaml."""
-    return True
-
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Omnisense from a config entry."""
     # Store the entry data if needed

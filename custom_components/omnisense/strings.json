@@ -1,6 +1,6 @@
 {
+    "title": "Omnisense Configuration",  
     "config": {
-      "title": "Omnisense Configuration",
       "step": {
         "user": {
           "title": "Omnisense Login Credentials",
