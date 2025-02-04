@@ -161,7 +161,7 @@ class OmniSenseSensor(SensorEntity):
         self._name = name
         self._site_name = site_name
         # Normalize sensor_id to a list.
-        self._sensor_ids = sensor_id if isinstance(sensor_id, list) else ([sensor_id] if sensor_id else [])
+        self._sensor_id = sensor_id if isinstance(sensor_id, list) else ([sensor_id] if sensor_id else [])
         self.coordinator = coordinator
 
     @property
@@ -176,8 +176,8 @@ class OmniSenseSensor(SensorEntity):
         If there is exactly one sensor ID, we can use that (combined with the site name).
         Otherwise, return None so that the entity is not user-manageable.
         """
-        if self._sensor_ids and len(self._sensor_ids) == 1:
-            return f"{self._site_name.lower()}_{self._sensor_ids[0].lower()}"
+        if self._sensor_id and len(self._sensor_id) == 1:
+            return f"{self._site_name.lower()}_{self._sensor_id[0].lower()}"
         return None
 
     @property
@@ -188,29 +188,29 @@ class OmniSenseSensor(SensorEntity):
         Otherwise, return the number of sensors found.
         """
         data = self.coordinator.data or {}
-        if self._sensor_ids:
-            if len(self._sensor_ids) == 1:
-                sensor_data = data.get(self._sensor_ids[0])
+        if self._sensor_id:
+            if len(self._sensor_id) == 1:
+                sensor_data = data.get(self._sensor_id[0])
                 return sensor_data.get("temperature") if sensor_data else None
-            return len({sid: data[sid] for sid in self._sensor_ids if sid in data})
+            return len({sid: data[sid] for sid in self._sensor_id if sid in data})
         return len(data)
 
     @property
     def extra_state_attributes(self):
         """Return additional sensor data as attributes."""
         data = self.coordinator.data or {}
-        if self._sensor_ids:
-            if len(self._sensor_ids) == 1:
-                return data.get(self._sensor_ids[0], {})
-            return {"sensors": {sid: data[sid] for sid in self._sensor_ids if sid in data}}
+        if self._sensor_id:
+            if len(self._sensor_id) == 1:
+                return data.get(self._sensor_id[0], {})
+            return {"sensors": {sid: data[sid] for sid in self._sensor_id if sid in data}}
         return {"sensors": data}
 
     @property
     def device_info(self):
         """Return device information about this sensor."""
         return {
-            "identifiers": {(DOMAIN, self._sensor_ids)},
-            "name": f"{self._site_name} Sensor {self._sensor_ids}",
+            "identifiers": {(DOMAIN, self._sensor_id)},
+            "name": f"{self._site_name} Sensor {self._sensor_id}",
             "manufacturer": "OmniSense",
             "model": "Sensor Model XYZ",  # Replace with actual model if available
             "sw_version": "1.0",
