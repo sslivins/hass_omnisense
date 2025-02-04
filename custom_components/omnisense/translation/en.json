@@ -1,0 +1,29 @@
+{
+    "config": {
+      "step": {
+        "user": {
+          "title": "User Credentials",
+          "description": "Please enter your username and password to proceed to the next step.",
+          "data": {
+            "username": "Username",
+            "password": "Password"
+          }
+        },
+        "select_site": {
+          "title": "Select Sites",
+          "description": "Choose one or more sites from the list below and click 'Submit' to proceed.",
+          "data": {
+            "selected_sites": "Available Sites"
+          }
+        },
+        "sensors": {
+          "title": "Select Sensors",
+          "description": "Select the sensors you wish to monitor and click 'Submit' to finish the setup.",
+          "data": {
+            "selected_sensors": "Available Sensors"
+          }
+        }
+      }
+    }
+  }
+  
