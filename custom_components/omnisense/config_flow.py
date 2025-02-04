@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from homeassistant import config_entries
 from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
 import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.selector import selector
+from homeassistant.helpers.selector import SelectSelector
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -57,44 +57,15 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors["base"] = "Could not retrieve sensor list. Please verify your credentials and site name."
             return self.async_show_form(step_id="sensors", data_schema=vol.Schema({}), errors=errors)
         
-        # Create sensor options mapping sensor IDs to labels.
-        sensor_options = {sid: f"{sid} - {info.get('description', '')}" for sid, info in sensors.items()}
-        _LOGGER.error("Omnisense: sensor options: %s", sensor_options)
-        # Use the selector helper to render a multi-select as a list.
-        dummy_options = {"sensor1": "Sensor 1", "sensor2": "Sensor 2"}
-        # schema = vol.Schema({
-        #     vol.Required("selected_sensors", default=list(dummy_options.keys())): cv.multi_select(dummy_options)
-        # })
-        
-        # schema = vol.Schema({
-        #     vol.Required("selected_sensors"): cv.multi_select(sensor_options)
-        # })  
-        
-        # schema = vol.Schema({
-        #     vol.Required("selected_sensors"):selector.SelectSelector(
-        #       selector.SelectSelectorConfig(
-        #         options=dummy_options,
-        #         multiple=False,
-        #         mode=selector.SelectSelectorMode.LIST,
-        #       ),
-        #     ),      
-        # })
-        
+        # # Create sensor options mapping sensor IDs to labels.
+        available_sensors = {sid: f"{sid} - {info.get('description', '')}" for sid, info in sensors.items()}
+
         schema = vol.Schema({
-            vol.Required("selected_sensors"): selector({
-                "select": {
-                    "multiple": True,
-                    "options": dummy_options,  # Make sure sensor_options is a dict of str: str
-                    "mode": "list",  # Forces a list view that is usually larger and scrollable
-                }
-            })
+            vol.Required("Select Sensors to Add"): cv.multi_select(available_sensors)
         })
         
-        print("schema: ", convert(schema))
+        _LOGGER.debug("schema: ", schema)
         
-        # schema = vol.Schema({
-        #     vol.Required("selected_sensors", default=""): str,
-        # })        
         return self.async_show_form(step_id="sensors", data_schema=schema, errors=errors)
 
     def _fetch_sensors(self):
