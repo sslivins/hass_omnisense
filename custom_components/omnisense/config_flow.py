@@ -78,7 +78,7 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_show_form(step_id="sensors", data_schema=vol.Schema({}), errors=errors)
 
         # Create sensor options mapping sensor IDs to labels
-        available_sensors = {sid: f"{sid} - {info.get('description', '')}" for sid, info in sensors.items()}
+        available_sensors = {sid: f"{sid} - {info.get('description', '<empty>')}" for sid, info in sensors.items()}
 
         schema = vol.Schema({
             vol.Required("selected_sensors"): cv.multi_select(available_sensors)
@@ -145,6 +145,8 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         if len(tds) >= 10:
                             sid = tds[0].get_text(strip=True)
                             desc = tds[1].get_text(strip=True)
+                            if desc == "~click to edit~":
+                                desc = "<description not set>"
                             sensors[sid] = {"description": desc}
 
             _LOGGER.debug("Fetched sensors: %s", sensors)

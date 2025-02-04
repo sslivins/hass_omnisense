@@ -96,8 +96,13 @@ def _fetch_sensor_data(username, password, site_name, sensor_ids):
                         temperature = float(tds[4].get_text(strip=True))
                     except ValueError:
                         temperature = None
+
+                    desc = tds[1].get_text(strip=True)
+                    if desc == "~click to edit~":
+                        desc = ""
+
                     sensors[sid] = {
-                        "description": tds[1].get_text(strip=True),
+                        "description": desc,
                         "last_activity": tds[2].get_text(strip=True),
                         "status": tds[3].get_text(strip=True),
                         "temperature": temperature,
