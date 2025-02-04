@@ -191,7 +191,7 @@ class OmniSenseSensor(SensorEntity):
         """
         data = self.coordinator.data or {}
         if self._sensor_id:
-            sensor_data = data.get(self._sensor_id[0])
+            sensor_data = data.get(self._sensor_id)
             return sensor_data.get("temperature") if sensor_data else None
         return len(data)
 
