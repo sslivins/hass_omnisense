@@ -207,7 +207,7 @@ class OmniSenseSensor(SensorEntity):
     def device_info(self):
         """Return device information about this sensor."""
         return {
-            "identifiers": {(DOMAIN, self._sensor_id)},
+            "identifiers": {(DOMAIN, self.unique_id)},
             "name": f"{self._site_name} Sensor {self._sensor_id}",
             "manufacturer": "OmniSense",
             "model": "Sensor Model XYZ",  # Replace with actual model if available
