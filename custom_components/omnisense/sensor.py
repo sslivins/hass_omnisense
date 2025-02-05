@@ -58,29 +58,29 @@ def _fetch_sensor_data(username, password, sites, sensor_ids=None):
         if response.status_code != 200:
             raise Exception("Error fetching job sites page.")
         soup = BeautifulSoup(response.text, "html.parser")
-        site_links = {
-            link.get_text(strip=True).lower(): link.get("onclick", "")
-            for link in soup.find_all("a")
-        }
+        # site_links = {
+        #     link.get_text(strip=True).lower(): link.get("onclick", "")
+        #     for link in soup.find_all("a")
+        # }
     except Exception as err:
         _LOGGER.error("Error fetching site list: %s", err)
         return {}
 
     all_sensors = {}
     for site_id, site_name in sites.items():
-        site_name_lower = site_name.lower()
-        if site_name_lower not in site_links:
-            _LOGGER.warning(f"Site with name '{site_name}' not found.")
-            continue
+        # site_name_lower = site_name.lower()
+        # if site_name_lower not in site_links:
+        #     _LOGGER.warning(f"Site with name '{site_name}' not found.")
+        #     continue
 
-        onclick = site_links[site_name_lower]
-        match = re.search(r"ShowSiteDetail\('(\d+)'\)", onclick)
-        if not match:
-            _LOGGER.warning(f"Could not extract site number for site '{site_name}'.")
-            continue
+        # onclick = site_links[site_name_lower]
+        # match = re.search(r"ShowSiteDetail\('(\d+)'\)", onclick)
+        # if not match:
+        #     _LOGGER.warning(f"Could not extract site number for site '{site_name}'.")
+        #     continue
 
-        site_number = match.group(1)
-        sensor_page_url = f"https://www.omnisense.com/sensor_select.asp?siteNbr={site_number}"
+        # site_number = match.group(1)
+        sensor_page_url = f"https://www.omnisense.com/sensor_select.asp?siteNbr={site_id}"
 
         try:
             response = session.get(sensor_page_url, timeout=10)
@@ -161,7 +161,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     for sid, sensor_info in sensors_data.items():
         if not sensor_ids or sid in sensor_ids:
             sensor_name = f"{sensor_info.get('description', 'Unknown')}"
-            entities.append(TemperatureSensor(sensor_name, sensor_info))
+            entities.append(TemperatureSensor(sensor_info))
 
     async_add_entities(entities)
     return True
