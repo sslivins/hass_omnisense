@@ -212,6 +212,6 @@ class TemperatureSensor(SensorEntity):
             #"via_device": (DOMAIN, self._site_name),
         }        
 
-    async def async_update(self):
-        """Request an update from the coordinator."""
-        await self.coordinator.async_request_refresh()
+    # async def async_update(self):
+    #     """Request an update from the coordinator."""
+    #     await self.coordinator.async_request_refresh()
