@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from homeassistant import config_entries
 from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.selector import SelectSelector
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,17 +43,28 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             selected_sites = user_input.get("selected_sites", [])
             if selected_sites:
-                self.selected_sites = selected_sites
+                self.selected_sites = [self.available_sites[site_id] for site_id in selected_sites]
                 return await self.async_step_sensors()
             else:
                 errors["base"] = "select_at_least_one_site"
 
         # Create site options mapping site IDs to labels
-        site_options = {site_name: site_name for site_id, site_name in self.available_sites.items()}
+        # site_options = {site_id: site_name for site_id, site_name in self.available_sites.items()}
+
+        # schema = vol.Schema({
+        #     vol.Required("selected_sites"): cv.multi_select(site_options)
+        # })
 
         schema = vol.Schema({
-            vol.Required("selected_sites"): cv.multi_select(site_options)
+            vol.Required("selected_sites"): SelectSelector({
+                "options": [
+                    {"value": site_id, "label": site_name} for site_id, site_name in self.available_sites.items()
+                ],
+                "multiple": True,
+                "mode": "list",
+            })
         })
+
         return self.async_show_form(step_id="select_site", data_schema=schema, errors=errors)
 
     async def async_step_sensors(self, user_input=None):
