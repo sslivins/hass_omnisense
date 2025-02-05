@@ -87,7 +87,7 @@ def _fetch_sensor_data(username, password, site_name, sensor_ids):
                 if caption and caption.text:
                     m = re.search(r"Sensor Type\s*(\d+)", caption.text)
                     if m:
-                        sensor_type = m.group(1)
+                        sensor_type = f"S-{m.group(1)}"
             for row in table.select("tr.sensorTable"):
                 tds = row.find_all("td")
                 if len(tds) >= 10:
@@ -125,7 +125,7 @@ def _fetch_sensor_data(username, password, site_name, sensor_ids):
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Omnisense sensor(s) from a config entry using DataUpdateCoordinator."""
     data = entry.data
-    site_name = data.get("site_name", "Home")
+    site_name = data.get("site_name", "")
     sensor_ids = data.get("sensor_ids", [])
     username = data.get("username")
     password = data.get("password")
@@ -143,76 +143,84 @@ async def async_setup_entry(hass, entry, async_add_entities):
     await coordinator.async_config_entry_first_refresh()
 
     entities = []
+    # sensors_data = coordinator.data or {}
+    # for sid, sensor_info in sensors_data.items():
+    #     if not sensor_ids or sid in sensor_ids:
+    #         sensor_name = f"{sensor_info.get('description', 'Unknown')}"
+    #         entities.append(OmniSenseSensor(sensor_name, site_name, coordinator, sensor_id=sid, sensor_attributes=sensor_info))
+
     sensors_data = coordinator.data or {}
     for sid, sensor_info in sensors_data.items():
         if not sensor_ids or sid in sensor_ids:
-            sensor_name = f"{sensor_info.get('description', 'Unknown')} - {site_name.capitalize()} - {sid}"
-            sensor_type = f"S-{sensor_info.get("sensor_type")}"
-            entities.append(OmniSenseSensor(sensor_name, site_name, coordinator, sensor_id=sid, sensor_type=sensor_type))
-
+            sensor_name = f"{sensor_info.get('description', 'Unknown')}"
+            entities.append(TemperatureSensor(sensor_name, site_name, coordinator, sensor_id=sid, sensor_attributes=sensor_info))
 
     async_add_entities(entities)
     return True
 
-class OmniSenseSensor(SensorEntity):
+class TemperatureSensor(SensorEntity):
     """Sensor entity that retrieves its data from a DataUpdateCoordinator."""
 
-    def __init__(self, name, site_name, coordinator, sensor_id=None, sensor_type="unknown"):
+    def __init__(self, name, site_name, coordinator, sensor_id=None, sensor_attributes=None):
         """Initialize the sensor."""
         self._name = name
         self._site_name = site_name
-        # Normalize sensor_id to a list.
-        _LOGGER.info(f"sensor_id: {sensor_id}")
         self._sensor_id = sensor_id
-        self._sensor_type = sensor_type
+        self._sensor_attributes = sensor_attributes
         self.coordinator = coordinator
+
+    @property
+    def icon(self) -> str:
+        """Return icon."""
+        return "mdi:thermometer"        
 
     @property
     def name(self):
         """Return the sensor name."""
-        return self._name
+        return f"{self._name} Temperature"
 
     @property
     def unique_id(self):
         """Return a unique ID for this sensor entity.
-        
-        If there is exactly one sensor ID, we can use that (combined with the site name).
-        Otherwise, return None so that the entity is not user-manageable.
         """
         if self._sensor_id:
-            return f"{self._site_name.lower()}_{self._sensor_id.lower()}"
+            return f"{self._sensor_id}"
         return None
 
-    @property
-    def state(self):
-        """Return the sensor state.
+    # @property
+    # def state(self):
+    #     """Return the sensor state.
         
-        If filtering by sensor id and exactly one is provided, return its temperature.
-        Otherwise, return the number of sensors found.
-        """
-        data = self.coordinator.data or {}
-        if self._sensor_id:
-            sensor_data = data.get(self._sensor_id)
-            return sensor_data.get("temperature") if sensor_data else None
-        return len(data)
+    #     If filtering by sensor id and exactly one is provided, return its temperature.
+    #     Otherwise, return the number of sensors found.
+    #     """
+    #     data = self.coordinator.data or {}
+    #     if self._sensor_id:
+    #         sensor_data = data.get(self._sensor_id)
+    #         return sensor_data.get("temperature") if sensor_data else None
+    #     return len(data)
 
-    @property
-    def extra_state_attributes(self):
-        """Return additional sensor data as attributes."""
-        data = self.coordinator.data or {}
-        if self._sensor_id:
-                return data.get(self._sensor_id, {})
-        return {"sensors": data}
+    # @property
+    # def extra_state_attributes(self):
+    #     """Return additional sensor data as attributes."""
+    #     data = self.coordinator.data or {}
+    #     if self._sensor_id:
+    #             return data.get(self._sensor_id, {})
+    #     return {"sensors": data}
+
+    def _get_state(self) -> int:
+        """Retrieve latest state."""
+        return f"{self._sensor_attributes.get('temperature', 'Unknown')}"
 
     @property
     def device_info(self):
         """Return device information about this sensor."""
         return {
             "identifiers": {(DOMAIN, self.unique_id)},
-            "name": f"{self._site_name} Sensor {self._sensor_id}",
+            "name": f"{self._name}",
             "manufacturer": "OmniSense",
-            "model": f"{self._sensor_type}",
-            "sw_version": "1.0",
+            "model": f"{self._sensor_info.get('sensor_type', 'Unknown')}",
+            "sw_version": "N/A",
             "via_device": (DOMAIN, self._site_name),
         }        
 
