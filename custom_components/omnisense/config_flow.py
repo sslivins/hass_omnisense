@@ -65,7 +65,7 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_USERNAME: self.username,
                     CONF_PASSWORD: self.password,
                     "selected_sites": self.selected_sites,
-                    "sensor_ids": selected_sensors,
+                    "selected_sensor_ids": selected_sensors,
                 }
                 return self.async_create_entry(title="Omnisense", data=data)
             else:
