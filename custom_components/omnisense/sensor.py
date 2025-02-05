@@ -143,11 +143,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
     await coordinator.async_config_entry_first_refresh()
 
     entities = []
-    # sensors_data = coordinator.data or {}
-    # for sid, sensor_info in sensors_data.items():
-    #     if not sensor_ids or sid in sensor_ids:
-    #         sensor_name = f"{sensor_info.get('description', 'Unknown')}"
-    #         entities.append(OmniSenseSensor(sensor_name, site_name, coordinator, sensor_id=sid, sensor_attributes=sensor_info))
 
     sensors_data = coordinator.data or {}
     for sid, sensor_info in sensors_data.items():
@@ -221,7 +216,7 @@ class TemperatureSensor(SensorEntity):
             "manufacturer": "OmniSense",
             "model": f"{self._sensor_info.get('sensor_type', 'Unknown')}",
             "sw_version": "N/A",
-            "via_device": (DOMAIN, self._site_name),
+            #"via_device": (DOMAIN, self._site_name),
         }        
 
     async def async_update(self):
