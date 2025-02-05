@@ -36,7 +36,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_PASSWORD): cv.string,
 })
 
-def _fetch_sensor_data(username, password, site_ids, sensor_ids=None):
+def _fetch_sensor_data(username, password, site_names, sensor_ids=None):
     """Fetch sensor data from Omnisense for specified sites and return a dictionary of sensor data."""
     session = requests.Session()
     payload = {
@@ -67,7 +67,7 @@ def _fetch_sensor_data(username, password, site_ids, sensor_ids=None):
         return {}
 
     all_sensors = {}
-    for site_id, site_name in site_ids.items():
+    for site_name in site_names:
         site_name_lower = site_name.lower()
         if site_name_lower not in site_links:
             _LOGGER.warning(f"Site with name '{site_name}' not found.")
@@ -142,9 +142,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
     password = data.get("password")
 
     _LOGGER.debug(f"Setting up Omnisense sensor(s) for sites: {site_ids} and sensor IDs: {sensor_ids}")
-
-    for site in site_ids:
-        _LOGGER.debug(f"Setting up Omnisense sensor(s) for site: {site}")
 
     coordinator = DataUpdateCoordinator(
         hass,

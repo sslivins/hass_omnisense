@@ -48,7 +48,7 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "select_at_least_one_site"
 
         # Create site options mapping site IDs to labels
-        site_options = {site_id: site_name for site_id, site_name in self.available_sites.items()}
+        site_options = {site_name: site_name for site_id, site_name in self.available_sites.items()}
 
         schema = vol.Schema({
             vol.Required("selected_sites"): cv.multi_select(site_options)
