@@ -161,7 +161,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     for sid, sensor_info in sensors_data.items():
         if not sensor_ids or sid in sensor_ids:
             sensor_name = f"{sensor_info.get('description', 'Unknown')}"
-            entities.append(TemperatureSensor(sensor_info))
+            entities.append(TemperatureSensor(sensor_info, coordinator))
 
     async_add_entities(entities)
     return True
@@ -169,12 +169,13 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class TemperatureSensor(SensorEntity):
     """Sensor entity that retrieves its data from a DataUpdateCoordinator."""
 
-    def __init__(self, sensor_info=None):
+    def __init__(self, sensor_info=None, coordinator=None):
         """Initialize the sensor."""
         self._name = f"{sensor_info.get('description', 'Unknown')}"
         self._site_name = f"{sensor_info.get('site_name', 'Unknown')}"
         self._sensor_id = f"{sensor_info.get('sensor_id', 'Unknown')}"
         self._sensor_info = sensor_info
+        self.coordinator = None
 
     @property
     def icon(self) -> str:
