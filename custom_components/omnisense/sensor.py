@@ -185,6 +185,7 @@ class TemperatureSensor(SensorEntity):
 
     @property
     def state(self) -> float:
+        _LOGGER.debug(f"Getting state for sensor: {self._name} Temperature = {self._sensor_info.get('temperature', 'Unknown')}")
         return f"{self._sensor_info.get('temperature', 'Unknown')}"
 
     # @property
