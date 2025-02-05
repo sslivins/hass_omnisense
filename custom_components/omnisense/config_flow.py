@@ -43,7 +43,7 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             selected_sites = user_input.get("selected_sites", [])
             if selected_sites:
-                self.selected_sites = [self.available_sites[site_id] for site_id in selected_sites]
+                self.selected_sites = {site_id: self.available_sites[site_id] for site_id in selected_sites}
                 return await self.async_step_sensors()
             else:
                 errors["base"] = "select_at_least_one_site"
@@ -144,7 +144,7 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 return {}
 
             sensors = {}
-            for site_id in self.selected_sites:
+            for site_id, site_name in self.selected_sites.items():
                 sensor_page_url = f"https://www.omnisense.com/sensor_select.asp?siteNbr={site_id}"
                 response = session.get(sensor_page_url, timeout=10)
                 if response.status_code != 200:
