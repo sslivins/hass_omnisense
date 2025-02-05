@@ -58,28 +58,14 @@ def _fetch_sensor_data(username, password, sites, sensor_ids=None):
         if response.status_code != 200:
             raise Exception("Error fetching job sites page.")
         soup = BeautifulSoup(response.text, "html.parser")
-        # site_links = {
-        #     link.get_text(strip=True).lower(): link.get("onclick", "")
-        #     for link in soup.find_all("a")
-        # }
+
     except Exception as err:
         _LOGGER.error("Error fetching site list: %s", err)
         return {}
 
     all_sensors = {}
     for site_id, site_name in sites.items():
-        # site_name_lower = site_name.lower()
-        # if site_name_lower not in site_links:
-        #     _LOGGER.warning(f"Site with name '{site_name}' not found.")
-        #     continue
 
-        # onclick = site_links[site_name_lower]
-        # match = re.search(r"ShowSiteDetail\('(\d+)'\)", onclick)
-        # if not match:
-        #     _LOGGER.warning(f"Could not extract site number for site '{site_name}'.")
-        #     continue
-
-        # site_number = match.group(1)
         sensor_page_url = f"https://www.omnisense.com/sensor_select.asp?siteNbr={site_id}"
 
         try:
@@ -129,6 +115,8 @@ def _fetch_sensor_data(username, password, sites, sensor_ids=None):
                         }
         except Exception as err:
             _LOGGER.error("Error fetching/parsing sensor data for site '%s': %s", site_name, err)
+
+    _LOGGER.debug(f"Got Sensor Data: {all_sensors}")
 
     return all_sensors
 
