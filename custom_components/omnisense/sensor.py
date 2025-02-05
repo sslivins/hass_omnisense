@@ -175,7 +175,7 @@ class TemperatureSensor(SensorEntity):
         self._site_name = f"{sensor_info.get('site_name', 'Unknown')}"
         self._sensor_id = f"{sensor_info.get('sensor_id', 'Unknown')}"
         self._sensor_info = sensor_info
-        self.coordinator = None
+        self.coordinator = coordinator
 
     @property
     def icon(self) -> str:
