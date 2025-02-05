@@ -147,7 +147,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
     for sid, sensor_info in sensors_data.items():
         if not sensor_ids or sid in sensor_ids:
             sensor_name = f"{sensor_info.get('description', 'Unknown')} - {site_name.capitalize()} - {sid}"
-            entities.append(OmniSenseSensor(sensor_name, site_name, coordinator, sensor_id=sid))
+            sensor_type = f"S-{sensor_info.get("sensor_type")}"
+            entities.append(OmniSenseSensor(sensor_name, site_name, coordinator, sensor_id=sid, sensor_type=sensor_type))
 
 
     async_add_entities(entities)
@@ -156,14 +157,14 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class OmniSenseSensor(SensorEntity):
     """Sensor entity that retrieves its data from a DataUpdateCoordinator."""
 
-    def __init__(self, name, site_name, coordinator, sensor_id=None):
+    def __init__(self, name, site_name, coordinator, sensor_id=None, sensor_type="unknown"):
         """Initialize the sensor."""
         self._name = name
         self._site_name = site_name
         # Normalize sensor_id to a list.
-        #self._sensor_id = sensor_id if isinstance(sensor_id, list) else ([sensor_id] if sensor_id else [])
         _LOGGER.info(f"sensor_id: {sensor_id}")
         self._sensor_id = sensor_id
+        self._sensor_type = sensor_type
         self.coordinator = coordinator
 
     @property
@@ -210,7 +211,7 @@ class OmniSenseSensor(SensorEntity):
             "identifiers": {(DOMAIN, self.unique_id)},
             "name": f"{self._site_name} Sensor {self._sensor_id}",
             "manufacturer": "OmniSense",
-            "model": "Sensor Model XYZ",  # Replace with actual model if available
+            "model": f"{self._sensor_type}",
             "sw_version": "1.0",
             "via_device": (DOMAIN, self._site_name),
         }        
