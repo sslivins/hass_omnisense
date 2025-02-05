@@ -136,12 +136,15 @@ def _fetch_sensor_data(username, password, site_ids, sensor_ids=None):
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Omnisense sensor(s) from a config entry using DataUpdateCoordinator."""
     data = entry.data
-    site_ids = data.get("selected_sites", "")
+    site_ids = data.get("selected_sites", [])
     sensor_ids = data.get("selected_sensor_ids", [])
     username = data.get("username")
     password = data.get("password")
 
     _LOGGER.debug(f"Setting up Omnisense sensor(s) for sites: {site_ids} and sensor IDs: {sensor_ids}")
+
+    for site in site_ids:
+        _LOGGER.debug(f"Setting up Omnisense sensor(s) for site: {site}")
 
     coordinator = DataUpdateCoordinator(
         hass,
