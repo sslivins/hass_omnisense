@@ -194,18 +194,9 @@ class TemperatureSensor(SensorEntity):
             return f"{self._sensor_id}"
         return None
 
-    # @property
-    # def state(self):
-    #     """Return the sensor state.
-        
-    #     If filtering by sensor id and exactly one is provided, return its temperature.
-    #     Otherwise, return the number of sensors found.
-    #     """
-    #     data = self.coordinator.data or {}
-    #     if self._sensor_id:
-    #         sensor_data = data.get(self._sensor_id)
-    #         return sensor_data.get("temperature") if sensor_data else None
-    #     return len(data)
+    @property
+    def state(self) -> float:
+        return f"{self._sensor_info.get('temperature', 'Unknown')}"
 
     # @property
     # def extra_state_attributes(self):
