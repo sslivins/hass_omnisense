@@ -252,6 +252,8 @@ class TemperatureSensor(SensorBase):
         self._attr_unique_id = f"{self._sid}_temperature"
         self._attr_name = f"{self._sensor_name} Temperature"
 
+        self._state = 0
+
 
     # @property
     # def name(self):
