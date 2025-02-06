@@ -1,6 +1,9 @@
 {
     "title": "Omnisense",  
     "config": {
+      "abort": {
+        "already_configured": "Device is already configured"
+      },      
       "step": {
         "user": {
           "title": "Omnisense Login Credentials",
