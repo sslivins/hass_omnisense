@@ -249,7 +249,7 @@ class TemperatureSensor(SensorBase):
 
         super().__init__(coordinator, sid)
 
-        self._attr_unique_id = f"{self._sensor_id}_temperature"
+        self._attr_unique_id = f"{self._sid}_temperature"
         self._attr_name = f"{self._sensor_name} Temperature"
 
 
