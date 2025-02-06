@@ -162,7 +162,9 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
         self.sites = data.get("selected_sites", [])
         self.sensor_ids = data.get("selected_sensor_ids", [])
 
-    # async def _async_setup(self):
+    async def _async_setup(self):
+
+        self.update_interval = timedelta(seconds=45)
     #     """Set up the coordinator
 
     #     This is the place to set up your coordinator,
