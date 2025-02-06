@@ -145,7 +145,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     entities = []
 
     for idx, sid in enumerate(coordinator.data):
-        entities.append(TemperatureSensor(coordinator, idx))
+        entities.append(TemperatureSensor(coordinator, sid))
 
     # sensors_data = coordinator.data or {}
     # for sid, sensor in sensors_data.items():
@@ -204,13 +204,13 @@ class SensorBase(CoordinatorEntity, SensorEntity):
 
     should_poll = True
 
-    def __init__(self, coordinator=None, idx=None):
+    def __init__(self, coordinator=None, sid=None):
 
-        super().__init__(coordinator, context=idx)
-        self.idx = idx
+        super().__init__(coordinator)
+        self._sid = sid
 
         """Initialize the sensor."""
-        self.sensor_data = self.coordinator.data[self.idx]
+        self.sensor_data = self.coordinator.data.get(self._sid, {})
 
         self._sid = self.sensor_data.get('sensor_id', 'Unknown')
         self._sensor_name = self.sensor_data.get('description', 'Unknown')
@@ -244,10 +244,10 @@ class TemperatureSensor(SensorBase):
     _attr_unit_of_measurement = "°C"
     _attr_icon = "mdi:thermometer"
 
-    def __init__(self, coordinator=None, idx=None):
+    def __init__(self, coordinator=None, sid=None):
         """Initialize the sensor."""
 
-        super().__init__(coordinator, idx)
+        super().__init__(coordinator, sid)
 
         _LOGGER.debug(f"Initializing temperature entity for sensor: {self._sid}")        
 
