@@ -137,10 +137,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
     for idx, sid in enumerate(coordinator.data):
         entities.append(TemperatureSensor(coordinator, sid))
 
-    # sensors_data = coordinator.data or {}
-    # for sid, sensor in sensors_data.items():
-    #     entities.append(TemperatureSensor(sensor, coordinator))
-
     async_add_entities(entities)
 
     return True
@@ -266,8 +262,45 @@ class TemperatureSensor(SensorBase):
 
     @property
     def state(self) -> float:
-        _LOGGER.debug(f"Getting state for sensor: {self._attr_name} = {self.sensor_data.get('temperature', 'Unknown')}")
+        _LOGGER.debug(f"Getting state for sensor: {self._attr_name} = {self._state}")
         return self._state
+    
+class SensorBatteryLevel(SensorBase):
+    """Sensor entity that retrieves its data from a DataUpdateCoordinator."""
+
+    device_class = SensorDeviceClass.BATTERY
+    _attr_unit_of_measurement = "%"
+    _attr_icon = "mdi:battery"
+    max_battery_voltage = 3.6
+
+    def __init__(self, coordinator=None, sid=None):
+        """Initialize the sensor."""
+
+        super().__init__(coordinator, sid)
+
+        _LOGGER.debug(f"Initializing battery entity for sensor: {self._sid}")        
+
+        self._attr_unique_id = f"{self._sid}_battery"
+        self._attr_name = f"{self._sensor_name} Battery Level"
+        self.battery_voltage = self.sensor_data.get('battery_voltage', 'Unknown')
+        
+        #battery is a ER14505 3.6V Lithium Thionyl Chloride Battery
+        self._state = round(float(self.battery_voltage) / self.max_battery_voltage * 100, 2)
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        sensor_data = self.coordinator.data.get(self._sid, {})
+        self.battery_voltage = self.sensor_data.get('battery_voltage', 'Unknown')
+        self._state = round(float(self.battery_voltage) / self.max_battery_voltage * 100, 2)
+        _LOGGER.debug(f"Updating sensor: {self._attr_name} = {self._state}")
+        self.async_write_ha_state()
+
+    @property
+    def state(self) -> float:
+        _LOGGER.debug(f"Getting battery level for sensor: {self._attr_name} = {self._state}")
+        return self._state
+
 
     # @property
     # def extra_state_attributes(self):
