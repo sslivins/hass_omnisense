@@ -26,21 +26,11 @@ CONF_SENSOR_IDS = "sensor_ids"     # List of sensor IDs to extract (empty = all)
 CONF_USERNAME = "username"         # Login username
 CONF_PASSWORD = "password"         # Login password
 
-# Defaults
-DEFAULT_NAME = "Scraped Temperature Sensors"
-DEFAULT_SENSOR_IDS = []   # if provided, filter sensors by these IDs (if empty, retrieve all)
 
 # Fixed URLs
 LOGIN_URL = "https://www.omnisense.com/user_login.asp"
 SITE_LIST_URL = "https://www.omnisense.com/site_select.asp"
-
-# Extend the platform schema (for YAML configuration)
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Required(CONF_SITE_NAME): cv.string,
-    vol.Optional(CONF_SENSOR_IDS, default=DEFAULT_SENSOR_IDS): vol.All(cv.ensure_list, [cv.string]),
-    vol.Optional(CONF_USERNAME): cv.string,
-    vol.Optional(CONF_PASSWORD): cv.string,
-})
+SENSOR_LIST_URL = "https://www.omnisense.com/sensor_select.asp"
 
 async def _fetch_sensor_data(username, password, sites, sensor_ids=None):
     """Fetch sensor data from Omnisense for specified sites asynchronously and return a dictionary of sensor data."""
@@ -73,7 +63,7 @@ async def _fetch_sensor_data(username, password, sites, sensor_ids=None):
 
         all_sensors = {}
         for site_id, site_name in sites.items():
-            sensor_page_url = f"https://www.omnisense.com/sensor_select.asp?siteNbr={site_id}"
+            sensor_page_url = f"{SENSOR_LIST_URL}?siteNbr={site_id}"
 
             try:
                 async with session.get(sensor_page_url, timeout=10) as response:
@@ -155,6 +145,7 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
             _LOGGER,
             name=DOMAIN,
             update_interval=timedelta(seconds=45)
+            update_method=self._omnisense_async_update_data,
         )
 
         self.username = data.get("username")
@@ -174,7 +165,7 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
     #     coordinator.async_config_entry_first_refresh.
     #     """
 
-    async def _async_update_data(self):
+    async def _omnisense_async_update_data(self):
         """Fetch data from API endpoint.
 
         This is the place to pre-process the data to lookup tables
@@ -188,7 +179,7 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
 
 
 class SensorBase(CoordinatorEntity, SensorEntity):
-    """Base class for Omnisense sensors."""
+    """Base class for Omnisense entities."""
 
     should_poll = True
 
@@ -197,7 +188,6 @@ class SensorBase(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._sid = sid
 
-        """Initialize the sensor."""
         self.sensor_data = self.coordinator.data.get(self._sid, {})
 
         self._sid = self.sensor_data.get('sensor_id', 'Unknown')
@@ -226,7 +216,6 @@ class SensorBase(CoordinatorEntity, SensorEntity):
     #     await self.coordinator.async_request_refresh()
 
 class TemperatureSensor(SensorBase):
-    """Sensor entity that retrieves its data from a DataUpdateCoordinator."""
 
     device_class = SensorDeviceClass.TEMPERATURE
     _attr_unit_of_measurement = "°C"
