@@ -247,7 +247,7 @@ class TemperatureSensor(SensorBase):
     def __init__(self, coordinator=None, idx=None):
         """Initialize the sensor."""
 
-        super().__init__(coordinator, context=idx)
+        super().__init__(coordinator, idx)
 
         _LOGGER.debug(f"Initializing temperature entity for sensor: {self._sid}")        
 
