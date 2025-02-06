@@ -209,7 +209,7 @@ class SensorBase(CoordinatorEntity, SensorEntity):
         self.coordinator = coordinator
         self._sid = sid
 
-        self.sensor_data = self._coordinator.data.get(sid, {})
+        self.sensor_data = self.coordinator.data.get(sid, {})
 
         self._sensor_name = self.sensor_data.get('description', 'Unknown')
         self._sensor_type = self.sensor_data.get('sensor_type', 'Unknown')
