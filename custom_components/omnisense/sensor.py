@@ -8,7 +8,6 @@ import aiohttp
 import asyncio
 from bs4 import BeautifulSoup
 import voluptuous as vol
-from homeassistant.exceptions import ConfigEntryAuthFailed, ApiError
 from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity, SensorDeviceClass
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -193,18 +192,12 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
         This is the place to pre-process the data to lookup tables
         so entities can quickly look up their data.
         """
-        try:
-            # Note: asyncio.TimeoutError and aiohttp.ClientError are already
-            # handled by the data update coordinator.
-            _LOGGER.debug(f"Fetching new sensor data")
-            async with async_timeout.timeout(10):
-                return await _fetch_sensor_data, self.username, self.password, self.sites, self.sensor_ids
-        # except ApiAuthError as err:
-        #     # Raising ConfigEntryAuthFailed will cancel future updates
-        #     # and start a config flow with SOURCE_REAUTH (async_step_reauth)
-        #     raise ConfigEntryAuthFailed from err
-        except ApiError as err:
-            raise UpdateFailed(f"Error communicating with API: {err}")    
+        # Note: asyncio.TimeoutError and aiohttp.ClientError are already
+        # handled by the data update coordinator.
+        _LOGGER.debug(f"Fetching new sensor data")
+        async with async_timeout.timeout(10):
+            return await _fetch_sensor_data, self.username, self.password, self.sites, self.sensor_ids
+
 
 class SensorBase(SensorEntity):
     """Base class for Omnisense sensors."""
