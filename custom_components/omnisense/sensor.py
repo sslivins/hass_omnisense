@@ -136,6 +136,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     for idx, sid in enumerate(coordinator.data):
         entities.append(TemperatureSensor(coordinator, sid))
+        entities.append(SensorBatteryLevel(coordinator, sid))
 
     async_add_entities(entities)
 
