@@ -235,7 +235,7 @@ class SensorBase(SensorEntity):
     #     """Request an update from the coordinator."""
     #     await self.coordinator.async_request_refresh()
 
-class TemperatureSensor(SensorEntity):
+class TemperatureSensor(SensorBase):
     """Sensor entity that retrieves its data from a DataUpdateCoordinator."""
 
     device_class = SensorDeviceClass.TEMPERATURE
