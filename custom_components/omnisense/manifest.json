@@ -9,7 +9,9 @@
   "requirements": [
     "beautifulsoup4==4.12.3",
     "Requests==2.32.3",
-    "voluptuous==0.15.2"
+    "voluptuous==0.15.2",
+    "numpy==2.2.0",
+    "scipy==1.15.1"
   ],
   "version": "0.1.4"
 }

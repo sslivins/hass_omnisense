@@ -13,6 +13,9 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator, UpdateFailed
 from homeassistant.core import callback
 
+import numpy as np
+from scipy.interpolate import interp1d
+
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -267,12 +270,24 @@ class TemperatureSensor(SensorBase):
         return self._state
     
 class SensorBatteryLevel(SensorBase):
-    """Sensor entity that retrieves its data from a DataUpdateCoordinator."""
+
+    voltage_soc_table = [
+        (3.65, 100), (3.62, 95), (3.60, 90),
+        (3.58, 85), (3.55, 80), (3.50, 70),
+        (3.48, 65), (3.45, 60), (3.42, 50),
+        (3.40, 40), (3.38, 30), (3.35, 25),
+        (3.33, 20), (3.30, 10), (3.20, 5),
+        (3.10, 2), (3.00, 1), (2.70, 0)
+    ]
 
     device_class = SensorDeviceClass.BATTERY
     _attr_unit_of_measurement = "%"
     _attr_icon = "mdi:battery"
-    max_battery_voltage = 3.6
+    # Extract separate lists for interpolation
+    voltages, soc_values = zip(*voltage_soc_table)
+
+    # Use cubic spline interpolation for smoothness
+    soc_interpolator = interp1d(voltages, soc_values, kind='cubic', fill_value="extrapolate")
 
     def __init__(self, coordinator=None, sid=None):
         """Initialize the sensor."""
@@ -293,7 +308,8 @@ class SensorBatteryLevel(SensorBase):
         """Handle updated data from the coordinator."""
         sensor_data = self.coordinator.data.get(self._sid, {})
         self.battery_voltage = self.sensor_data.get('battery_voltage', 'Unknown')
-        self._state = round(float(self.battery_voltage) / self.max_battery_voltage * 100, 2)
+        #self._state = round(float(self.battery_voltage) / self.max_battery_voltage * 100, 2)
+        self._state = self.estimate_soc(float(self.battery_voltage))
         _LOGGER.debug(f"Updating sensor: {self._attr_name} = {self._state}")
         self.async_write_ha_state()
 
@@ -301,21 +317,7 @@ class SensorBatteryLevel(SensorBase):
     def state(self) -> float:
         _LOGGER.debug(f"Getting battery level for sensor: {self._attr_name} = {self._state}")
         return self._state
-
-
-    # @property
-    # def extra_state_attributes(self):
-    #     """Return additional sensor data as attributes."""
-    #     data = self.coordinator.data or {}
-    #     if self._sensor_id:
-    #             return data.get(self._sensor_id, {})
-    #     return {"sensors": data}
-
-    # def _get_state(self) -> int:
-    #     """Retrieve latest state."""
-    #     return f"{self._sensor_info.get('temperature', 'Unknown')}"
-
-
-    # async def async_update(self):
-    #     """Request an update from the coordinator."""
-    #     await self.coordinator.async_request_refresh()
+    
+    def estimate_soc(self, voltage):
+        estimated_soc = self.soc_interpolator(voltage)
+        return max(0, min(100, round(float(estimated_soc), 2)))
