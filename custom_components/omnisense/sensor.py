@@ -277,7 +277,7 @@ class TemperatureSensor(SensorBase):
 
     @property
     def state(self) -> float:
-        _LOGGER.debug(f"Getting state for sensor: {self._name} Temperature = {self._sensor_info.get('temperature', 'Unknown')}")
+        _LOGGER.debug(f"Getting state for sensor: {self._attr_name} = {self._sensor_info.get('temperature', 'Unknown')}")
         return self._state
 
     # @property
