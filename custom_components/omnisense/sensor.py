@@ -8,7 +8,7 @@ import aiohttp
 import asyncio
 from bs4 import BeautifulSoup
 import voluptuous as vol
-from homeassistant.exceptions import ConfigEntryAuthFailed, ApiAuthError, ApiError
+from homeassistant.exceptions import ConfigEntryAuthFailed, ApiError
 from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity, SensorDeviceClass
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -153,6 +153,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     #     entities.append(TemperatureSensor(sensor, coordinator))
 
     async_add_entities(entities)
+
     return True
 
 class OmniSenseCoordinator(DataUpdateCoordinator):
@@ -198,10 +199,10 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
             _LOGGER.debug(f"Fetching new sensor data")
             async with async_timeout.timeout(10):
                 return await _fetch_sensor_data, self.username, self.password, self.sites, self.sensor_ids
-        except ApiAuthError as err:
-            # Raising ConfigEntryAuthFailed will cancel future updates
-            # and start a config flow with SOURCE_REAUTH (async_step_reauth)
-            raise ConfigEntryAuthFailed from err
+        # except ApiAuthError as err:
+        #     # Raising ConfigEntryAuthFailed will cancel future updates
+        #     # and start a config flow with SOURCE_REAUTH (async_step_reauth)
+        #     raise ConfigEntryAuthFailed from err
         except ApiError as err:
             raise UpdateFailed(f"Error communicating with API: {err}")    
 
@@ -250,6 +251,9 @@ class TemperatureSensor(SensorEntity):
 
     def __init__(self, coordinator=None, sid=None):
         """Initialize the sensor."""
+
+        _LOGGER.debug(f"Initializing temperature entity for sensor: {sid}")
+
         super().__init__(coordinator, sid)
 
         self._attr_unique_id = f"{self._sensor_id}_temperature"
