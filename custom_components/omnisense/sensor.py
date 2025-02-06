@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 import voluptuous as vol
 from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity, SensorDeviceClass
 import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator, UpdateFailed
 from homeassistant.core import callback
 
 from .const import DOMAIN
@@ -167,7 +167,7 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
             # update_method=lambda: hass.async_add_executor_job(
             #     _fetch_sensor_data, username, password, sites, sensor_ids
             # ),
-            update_interval=timedelta(minutes=60), 
+            update_interval=timedelta(minutes=5), 
             always_update=True
         )
 
@@ -199,7 +199,7 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
             return await _fetch_sensor_data(self.username, self.password, self.sites, self.sensor_ids)
 
 
-class SensorBase(SensorEntity):
+class SensorBase(CoordinatorEntity, SensorEntity):
     """Base class for Omnisense sensors."""
 
     should_poll = True
@@ -252,7 +252,7 @@ class TemperatureSensor(SensorBase):
         self._attr_unique_id = f"{self._sid}_temperature"
         self._attr_name = f"{self._sensor_name} Temperature"
 
-        self._state = 0
+        self._state = self.sensor_data.get('temperature', 'Unknown')
 
 
     # @property
