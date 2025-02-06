@@ -272,12 +272,12 @@ class TemperatureSensor(SensorBase):
 class SensorBatteryLevel(SensorBase):
     #battery is a ER14505 3.6V Lithium Thionyl Chloride Battery
     voltage_soc_table = [
-        (3.65, 100), (3.62, 95), (3.60, 90),
-        (3.58, 85), (3.55, 80), (3.50, 70),
-        (3.48, 65), (3.45, 60), (3.42, 50),
-        (3.40, 40), (3.38, 30), (3.35, 25),
-        (3.33, 20), (3.30, 10), (3.20, 5),
-        (3.10, 2), (3.00, 1), (2.70, 0)
+        (3.65, 100), (3.60, 95), (3.58, 90),
+        (3.55, 85), (3.50, 80), (3.48, 75),
+        (3.45, 70), (3.42, 60), (3.40, 50),
+        (3.38, 40), (3.35, 30), (3.30, 20),
+        (3.20, 10), (3.10, 5), (3.00, 2),
+        (2.80, 1), (2.70, 0)
     ]
 
     device_class = SensorDeviceClass.BATTERY
@@ -307,7 +307,6 @@ class SensorBatteryLevel(SensorBase):
         """Handle updated data from the coordinator."""
         sensor_data = self.coordinator.data.get(self._sid, {})
         self.battery_voltage = self.sensor_data.get('battery_voltage', 'Unknown')
-        #self._state = round(float(self.battery_voltage) / self.max_battery_voltage * 100, 2)
         self._state = self.estimate_soc(float(self.battery_voltage))
         _LOGGER.debug(f"Updating sensor: {self._attr_name} = {self._state}")
         self.async_write_ha_state()
