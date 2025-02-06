@@ -276,7 +276,7 @@ class TemperatureSensor(SensorBase):
         #self._attr_is_on = self.coordinator.data[self.idx]["state"]
         sensor_data = self.coordinator.data.get(self._sid, {})
         self._state = sensor_data.get('temperature', 'Unknown')
-        _LOGGER.debug(f"Updating sensor: {self._name} Temperature = {self._state}")
+        _LOGGER.debug(f"Updating sensor: {self._attr_name} = {self._state}")
         self.async_write_ha_state()
 
     @property
