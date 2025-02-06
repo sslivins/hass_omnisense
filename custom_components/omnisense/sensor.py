@@ -128,16 +128,6 @@ async def _fetch_sensor_data(username, password, sites, sensor_ids=None):
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Omnisense sensor(s) from a config entry using DataUpdateCoordinator."""
 
-    # coordinator = DataUpdateCoordinator(
-    #     hass,
-    #     _LOGGER,
-    #     name="Omnisense Data",
-    #     update_method=lambda: hass.async_add_executor_job(
-    #         _fetch_sensor_data, username, password, sites, sensor_ids
-    #     ),
-    #     update_interval=timedelta(minutes=60), 
-    # )
-
     coordinator = OmniSenseCoordinator(hass, entry.data)
 
     await coordinator.async_config_entry_first_refresh()
@@ -163,11 +153,8 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
         super().__init__(
             hass,
             _LOGGER,
-            name="Omnisense Data",
-            # update_method=lambda: hass.async_add_executor_job(
-            #     _fetch_sensor_data, username, password, sites, sensor_ids
-            # ),
-            update_interval=timedelta(minutes=5), 
+            name=DOMAIN,
+            update_interval=timedelta(seconds=45), 
             always_update=True
         )
 
@@ -273,7 +260,6 @@ class TemperatureSensor(SensorBase):
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        #self._attr_is_on = self.coordinator.data[self.idx]["state"]
         sensor_data = self.coordinator.data.get(self._sid, {})
         self._state = sensor_data.get('temperature', 'Unknown')
         _LOGGER.debug(f"Updating sensor: {self._attr_name} = {self._state}")

@@ -102,6 +102,7 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     {"value": sid, "label": name} for sid, name in available_sensors.items()
                 ],
                 "multiple": True,
+                "mode" : "dropdown"
             })
         })
 
