@@ -209,10 +209,10 @@ class SensorBase(SensorEntity):
         self._coordinator = coordinator
         self._sid = sid
 
-        sensor_data = self._coordinator.data.get(sid, {})
+        self.sensor_data = self._coordinator.data.get(sid, {})
 
-        self._sensor_name = sensor_data.get('description', 'Unknown')
-        self._sensor_type = sensor_data.get('sensor_type', 'Unknown')
+        self._sensor_name = self.sensor_data.get('description', 'Unknown')
+        self._sensor_type = self.sensor_data.get('sensor_type', 'Unknown')
 
     @property
     def device_info(self):
@@ -277,7 +277,7 @@ class TemperatureSensor(SensorBase):
 
     @property
     def state(self) -> float:
-        _LOGGER.debug(f"Getting state for sensor: {self._attr_name} = {self._sensor_info.get('temperature', 'Unknown')}")
+        _LOGGER.debug(f"Getting state for sensor: {self._attr_name} = {self.sensor_data.get('temperature', 'Unknown')}")
         return self._state
 
     # @property
