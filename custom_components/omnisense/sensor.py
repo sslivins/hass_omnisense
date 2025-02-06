@@ -196,7 +196,7 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
         # handled by the data update coordinator.
         _LOGGER.debug(f"Fetching new sensor data")
         async with async_timeout.timeout(10):
-            return await _fetch_sensor_data, self.username, self.password, self.sites, self.sensor_ids
+            return await _fetch_sensor_data(self.username, self.password, self.sites, self.sensor_ids)
 
 
 class SensorBase(SensorEntity):
