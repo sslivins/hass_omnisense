@@ -154,8 +154,7 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(seconds=45), 
-            always_update=True
+            update_interval=timedelta(seconds=45)
         )
 
         self.username = data.get("username")
@@ -163,15 +162,15 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
         self.sites = data.get("selected_sites", [])
         self.sensor_ids = data.get("selected_sensor_ids", [])
 
-    async def _async_setup(self):
-        """Set up the coordinator
+    # async def _async_setup(self):
+    #     """Set up the coordinator
 
-        This is the place to set up your coordinator,
-        or to load data, that only needs to be loaded once.
+    #     This is the place to set up your coordinator,
+    #     or to load data, that only needs to be loaded once.
 
-        This method will be called automatically during
-        coordinator.async_config_entry_first_refresh.
-        """
+    #     This method will be called automatically during
+    #     coordinator.async_config_entry_first_refresh.
+    #     """
 
     async def _async_update_data(self):
         """Fetch data from API endpoint.
