@@ -62,7 +62,6 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     {"value": site_id, "label": site_name} for site_id, site_name in self.available_sites.items()
                 ],
                 "multiple": True,
-                "mode": "list",
             })
         })
 
@@ -93,9 +92,19 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # Create sensor options mapping sensor IDs to labels
         available_sensors = {sid: f"{sid} - {info.get('description', '<empty>')}" for sid, info in sensors.items()}
 
+        # schema = vol.Schema({
+        #     vol.Required("selected_sensors"): cv.multi_select(available_sensors)
+        # })
+
         schema = vol.Schema({
-            vol.Required("selected_sensors"): cv.multi_select(available_sensors)
+            vol.Required("selected_sensors"): SelectSelector({
+                "options": [
+                    {"value": sid, "label": name} for sid, name in available_sensors.items()
+                ],
+                "multiple": True,
+            })
         })
+
         return self.async_show_form(step_id="sensors", data_schema=schema, errors=errors)
 
     def _fetch_sites(self):
