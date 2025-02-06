@@ -270,7 +270,7 @@ class TemperatureSensor(SensorBase):
         return self._state
     
 class SensorBatteryLevel(SensorBase):
-
+    #battery is a ER14505 3.6V Lithium Thionyl Chloride Battery
     voltage_soc_table = [
         (3.65, 100), (3.62, 95), (3.60, 90),
         (3.58, 85), (3.55, 80), (3.50, 70),
@@ -300,8 +300,7 @@ class SensorBatteryLevel(SensorBase):
         self._attr_name = f"{self._sensor_name} Battery Level"
         self.battery_voltage = self.sensor_data.get('battery_voltage', 'Unknown')
         
-        #battery is a ER14505 3.6V Lithium Thionyl Chloride Battery
-        self._state = round(float(self.battery_voltage) / self.max_battery_voltage * 100, 2)
+        self._state = self.estimate_soc(float(self.battery_voltage))
 
     @callback
     def _handle_coordinator_update(self) -> None:
