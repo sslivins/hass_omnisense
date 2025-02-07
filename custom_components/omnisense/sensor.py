@@ -322,7 +322,7 @@ class SensorLastActivity(SensorBase):
         self.async_write_ha_state()
 
     @property    
-    def native_value(self) -> datetime:
+    def native_value(self) -> datetime.datetime:
         return self._value
     
     
