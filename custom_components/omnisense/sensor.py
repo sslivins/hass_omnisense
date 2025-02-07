@@ -212,7 +212,7 @@ class SensorBase(CoordinatorEntity, SensorEntity):
 class TemperatureSensor(SensorBase):
 
     device_class = SensorDeviceClass.TEMPERATURE
-    _attr_unit_of_measurement = "°C"
+    native_unit_of_measurement = "°C"
     _attr_icon = "mdi:thermometer"
 
     def __init__(self, coordinator=None, sid=None):
@@ -253,7 +253,7 @@ class SensorBatteryLevel(SensorBase):
     ]
 
     device_class = SensorDeviceClass.BATTERY
-    _attr_unit_of_measurement = "%"
+    native_unit_of_measurement = "%"
     _attr_icon = "mdi:battery"
     # Extract separate lists for interpolation
     voltages, soc_values = zip(*voltage_soc_table)
@@ -322,7 +322,7 @@ class SensorLastActivity(SensorBase):
 class SensorRelativeHumidity(SensorBase):
 
     device_class = SensorDeviceClass.HUMIDITY
-    _attr_unit_of_measurement = "%"
+    native_unit_of_measurement = "%"
     _attr_icon = "mdi:water-percent"
 
     def __init__(self, coordinator=None, sid=None):
@@ -350,7 +350,7 @@ class SensorRelativeHumidity(SensorBase):
 class SensorAbsoluteHumidity(SensorBase):
 
     device_class = SensorDeviceClass.HUMIDITY
-    _attr_unit_of_measurement = "g/m³"
+    native_unit_of_measurement = "g/m³"
     _attr_icon = "mdi:water-percent"
 
     def __init__(self, coordinator=None, sid=None):
@@ -377,7 +377,7 @@ class SensorAbsoluteHumidity(SensorBase):
 class SensorWoodMoisture(SensorBase):
 
     device_class = SensorDeviceClass.MOISTURE
-    _attr_unit_of_measurement = "%"
+    native_unit_of_measurement = "%"
     _attr_icon = "mdi:water"
 
     def __init__(self, coordinator=None, sid=None):
@@ -405,7 +405,7 @@ class SensorWoodMoisture(SensorBase):
 class SensorDewPoint(SensorBase):
 
     device_class = SensorDeviceClass.TEMPERATURE
-    _attr_unit_of_measurement = "°C"
+    native_unit_of_measurement = "°C"
     _attr_icon = "mdi:thermometer"
 
     def __init__(self, coordinator=None, sid=None):
