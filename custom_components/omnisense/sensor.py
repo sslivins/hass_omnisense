@@ -283,7 +283,6 @@ class SensorBatteryLevel(SensorBase):
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
         self._extract_value()
-        _LOGGER.debug(f"Updating sensor: {self._attr_name} = {self._state}%")
         self.async_write_ha_state()
 
     
@@ -323,8 +322,8 @@ class SensorLastActivity(SensorBase):
         self.async_write_ha_state()
 
     @property    
-    def native_value(self) -> float:
-        return self._state
+    def native_value(self) -> datetime:
+        return self._value
     
     
 class SensorRelativeHumidity(SensorBase):
