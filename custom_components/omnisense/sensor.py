@@ -238,7 +238,7 @@ class TemperatureSensor(SensorBase):
 
     @property
     def state(self) -> float:
-        _LOGGER.debug(f"Getting state for sensor: {self._attr_name} = {self._state}")
+        _LOGGER.debug(f"{self._attr_name} = {self._state}")
         return self._state
     
 class SensorBatteryLevel(SensorBase):
@@ -285,7 +285,7 @@ class SensorBatteryLevel(SensorBase):
 
     @property
     def state(self) -> float:
-        _LOGGER.debug(f"Getting battery level for sensor: {self._attr_name} = {self._state}%")
+        _LOGGER.debug(f"{self._attr_name} = {self._state}")
         return self._state
     
     def estimate_soc(self, voltage):
@@ -316,14 +316,14 @@ class SensorLastActivity(SensorBase):
 
     @property
     def state(self) -> datetime:
-        _LOGGER.debug(f"Getting last activity for sensor: {self._attr_name} = {self._state}")
+        _LOGGER.debug(f"{self._attr_name} = {self._state}")
         return self._state
     
 class SensorRelativeHumidity(SensorBase):
 
     device_class = SensorDeviceClass.HUMIDITY
     _attr_unit_of_measurement = "%"
-    _attr_icon = "mdi:humidity"
+    _attr_icon = "mdi:water-percent"
 
     def __init__(self, coordinator=None, sid=None):
         super().__init__(coordinator, sid)
@@ -343,7 +343,7 @@ class SensorRelativeHumidity(SensorBase):
 
     @property
     def state(self) -> float:
-        _LOGGER.debug(f"Getting last activity for sensor: {self._attr_name} = {self._state}")
+        _LOGGER.debug(f"{self._attr_name} = {self._state}")
         return self._state    
     
 
@@ -351,7 +351,7 @@ class SensorAbsoluteHumidity(SensorBase):
 
     device_class = SensorDeviceClass.HUMIDITY
     _attr_unit_of_measurement = "g/m³"
-    _attr_icon = "mdi:humidity"
+    _attr_icon = "mdi:water-percent"
 
     def __init__(self, coordinator=None, sid=None):
         super().__init__(coordinator, sid)
@@ -371,14 +371,14 @@ class SensorAbsoluteHumidity(SensorBase):
 
     @property
     def state(self) -> float:
-        _LOGGER.debug(f"Getting last activity for sensor: {self._attr_name} = {self._state}")
+        _LOGGER.debug(f"{self._attr_name} = {self._state}")
         return self._state
     
 class SensorWoodMoisture(SensorBase):
 
     device_class = SensorDeviceClass.MOISTURE
     _attr_unit_of_measurement = "%"
-    _attr_icon = "mdi:moisture"
+    _attr_icon = "mdi:water"
 
     def __init__(self, coordinator=None, sid=None):
         super().__init__(coordinator, sid)
@@ -398,5 +398,33 @@ class SensorWoodMoisture(SensorBase):
 
     @property
     def state(self) -> float:
-        _LOGGER.debug(f"Getting last activity for sensor: {self._attr_name} = {self._state}")
+        _LOGGER.debug(f"{self._attr_name} = {self._state}")
         return self._state        
+    
+
+class SensorDewPoint(SensorBase):
+
+    device_class = SensorDeviceClass.TEMPERATURE
+    _attr_unit_of_measurement = "°C"
+    _attr_icon = "mdi:thermometer"
+
+    def __init__(self, coordinator=None, sid=None):
+        super().__init__(coordinator, sid)
+
+        self._attr_unique_id = f"{self._sid}_dew_point"
+        self._attr_name = f"{self._sensor_name} Dew Point"
+        self._extract_state()
+
+    def _extract_state(self):
+        self._state = self.sensor_data.get('dew_point', 'Unknown')
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        self._extract_state()
+        self.async_write_ha_state()
+
+    @property
+    def state(self) -> float:
+        _LOGGER.debug(f"{self._attr_name} = {self._state}")
+        return self._state
