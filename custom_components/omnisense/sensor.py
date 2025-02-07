@@ -134,6 +134,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         entities.append(SensorRelativeHumidity(coordinator, sid))
         entities.append(SensorAbsoluteHumidity(coordinator, sid))
         entities.append(SensorWoodMoisture(coordinator, sid))
+        entities.append(SensorDewPoint(coordinator, sid))
         
     async_add_entities(entities)
 
