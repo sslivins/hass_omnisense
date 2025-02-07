@@ -3,7 +3,7 @@ import re
 import logging
 import requests
 import async_timeout
-from datetime import timedelta
+from datetime import timedelta, datetime
 import aiohttp
 import asyncio
 from bs4 import BeautifulSoup
@@ -74,7 +74,7 @@ async def _fetch_sensor_data(username, password, sites, sensor_ids=None):
                         sensor_type = None
                         table_id = table.get("id", "")
                         if table_id.startswith("sensorType"):
-                            sensor_type = table_id[len("sensorType"):]
+                            sensor_type = f"S-{table_id[len("sensorType"):]}"
                         if not sensor_type:
                             caption = table.find("caption")
                             if caption and caption.text:
@@ -101,8 +101,8 @@ async def _fetch_sensor_data(username, password, sites, sensor_ids=None):
                                     "last_activity": tds[2].get_text(strip=True),
                                     "status": tds[3].get_text(strip=True),
                                     "temperature": temperature,
-                                    "humidity": tds[5].get_text(strip=True),
-                                    "gpkg": tds[6].get_text(strip=True),
+                                    "relative_humidity": tds[5].get_text(strip=True),
+                                    "absolute_humidity": tds[6].get_text(strip=True),
                                     "dew_point": tds[7].get_text(strip=True),
                                     "wood_pct": tds[8].get_text(strip=True),
                                     "battery_voltage": tds[9].get_text(strip=True),
@@ -130,7 +130,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
     for idx, sid in enumerate(coordinator.data):
         entities.append(TemperatureSensor(coordinator, sid))
         entities.append(SensorBatteryLevel(coordinator, sid))
-
+        entities.append(SensorLastActivity(coordinator, sid))
+        entities.append(SensorRelativeHumidity(coordinator, sid))
+        entities.append(SensorAbsoluteHumidity(coordinator, sid))
+        entities.append(SensorWoodMoisture(coordinator, sid))
+        
     async_add_entities(entities)
 
     return True
@@ -205,16 +209,6 @@ class SensorBase(CoordinatorEntity, SensorEntity):
             "sw_version": "N/A",
         }
 
-
-    # @property
-    # def extra_state_attributes(self):
-    #     """Return additional sensor data as attributes."""
-    #     return self.coordinator.data.get(self._sensor_info.get('sensor_id', 'Unknown'), {})
-
-    # async def async_update(self):
-    #     """Request an update from the coordinator."""
-    #     await self.coordinator.async_request_refresh()
-
 class TemperatureSensor(SensorBase):
 
     device_class = SensorDeviceClass.TEMPERATURE
@@ -231,28 +225,15 @@ class TemperatureSensor(SensorBase):
         self._attr_unique_id = f"{self._sid}_temperature"
         self._attr_name = f"{self._sensor_name} Temperature"
 
-        self._state = self.sensor_data.get('temperature', 'Unknown')
+        self._extract_state()
 
-
-    # @property
-    # def name(self):
-    #     """Return the sensor name."""
-    #     return f"{self._name} Temperature"
-
-    # @property
-    # def unique_id(self):
-    #     """Return a unique ID for this sensor entity.
-    #     """
-    #     if self._sensor_id:
-    #         return f"{self._sensor_id}"
-    #     return None
+    def _extract_state(self):
+        self._state = self.sensor_data.get('temperature', 'Unknown') 
 
     @callback
     def _handle_coordinator_update(self) -> None:
-        """Handle updated data from the coordinator."""
-        sensor_data = self.coordinator.data.get(self._sid, {})
-        self._state = sensor_data.get('temperature', 'Unknown')
-        _LOGGER.debug(f"Updating sensor: {self._attr_name} = {self._state}")
+        self._extract_state()
+        _LOGGER.debug(f"Updating sensor: {self._attr_name} = {self._state}°C")
         self.async_write_ha_state()
 
     @property
@@ -289,24 +270,133 @@ class SensorBatteryLevel(SensorBase):
 
         self._attr_unique_id = f"{self._sid}_battery"
         self._attr_name = f"{self._sensor_name} Battery Level"
+        self._extract_state()
+
+    def _extract_state(self):
         self.battery_voltage = self.sensor_data.get('battery_voltage', 'Unknown')
-        
-        self._state = self.estimate_soc(float(self.battery_voltage))
+        self._state = self.estimate_soc(float(self.battery_voltage))      
 
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        sensor_data = self.coordinator.data.get(self._sid, {})
-        self.battery_voltage = self.sensor_data.get('battery_voltage', 'Unknown')
-        self._state = self.estimate_soc(float(self.battery_voltage))
-        _LOGGER.debug(f"Updating sensor: {self._attr_name} = {self._state}")
+        self._extract_state()
+        _LOGGER.debug(f"Updating sensor: {self._attr_name} = {self._state}%")
         self.async_write_ha_state()
 
     @property
     def state(self) -> float:
-        _LOGGER.debug(f"Getting battery level for sensor: {self._attr_name} = {self._state}")
+        _LOGGER.debug(f"Getting battery level for sensor: {self._attr_name} = {self._state}%")
         return self._state
     
     def estimate_soc(self, voltage):
         estimated_soc = self.soc_interpolator(voltage)
         return max(0, min(100, round(float(estimated_soc), 2)))
+    
+class SensorLastActivity(SensorBase):
+
+    device_class = SensorDeviceClass.TIMESTAMP
+    _attr_icon = "mdi:calendar-clock"
+
+    def __init__(self, coordinator=None, sid=None):
+        super().__init__(coordinator, sid)
+
+        self._attr_unique_id = f"{self._sid}_last_activity"
+        self._attr_name = f"{self._sensor_name} Last Activity"
+        self._extract_state()
+
+    def _extract_state(self):
+        last_activity = self.sensor_data.get('last_activity', 'Unknown')
+        self._state = datetime.strptime(last_activity, "%y-%m-%d %H:%M:%S") #24-12-30 10:59:40
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        self._extract_state()
+        self.async_write_ha_state()
+
+    @property
+    def state(self) -> datetime:
+        _LOGGER.debug(f"Getting last activity for sensor: {self._attr_name} = {self._state}")
+        return self._state
+    
+class SensorRelativeHumidity(SensorBase):
+
+    device_class = SensorDeviceClass.HUMIDITY
+    _attr_unit_of_measurement = "%"
+    _attr_icon = "mdi:humidity"
+
+    def __init__(self, coordinator=None, sid=None):
+        super().__init__(coordinator, sid)
+
+        self._attr_unique_id = f"{self._sid}_relative_humidity"
+        self._attr_name = f"{self._sensor_name} Relative Humidity"
+        self._extract_state()
+
+    def _extract_state(self):
+        self._state = self.sensor_data.get('relative_humidity', 'Unknown')
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        self._extract_state()
+        self.async_write_ha_state()
+
+    @property
+    def state(self) -> float:
+        _LOGGER.debug(f"Getting last activity for sensor: {self._attr_name} = {self._state}")
+        return self._state    
+    
+
+class SensorAbsoluteHumidity(SensorBase):
+
+    device_class = SensorDeviceClass.HUMIDITY
+    _attr_unit_of_measurement = "g/m³"
+    _attr_icon = "mdi:humidity"
+
+    def __init__(self, coordinator=None, sid=None):
+        super().__init__(coordinator, sid)
+
+        self._attr_unique_id = f"{self._sid}_absolute_humidity"
+        self._attr_name = f"{self._sensor_name} Absolute Humidity"
+        self._extract_state()
+
+    def _extract_state(self):
+        self._state = self.sensor_data.get('absolute_humidity', 'Unknown')
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        self._extract_state()
+        self.async_write_ha_state()
+
+    @property
+    def state(self) -> float:
+        _LOGGER.debug(f"Getting last activity for sensor: {self._attr_name} = {self._state}")
+        return self._state
+    
+class SensorWoodMoisture(SensorBase):
+
+    device_class = SensorDeviceClass.MOISTURE
+    _attr_unit_of_measurement = "%"
+    _attr_icon = "mdi:moisture"
+
+    def __init__(self, coordinator=None, sid=None):
+        super().__init__(coordinator, sid)
+
+        self._attr_unique_id = f"{self._sid}_wood_moisture"
+        self._attr_name = f"{self._sensor_name} Wood Moistute"
+        self._extract_state()
+
+    def _extract_state(self):
+        self._state = self.sensor_data.get('wood_pct', 'Unknown')
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        self._extract_state()
+        self.async_write_ha_state()
+
+    @property
+    def state(self) -> float:
+        _LOGGER.debug(f"Getting last activity for sensor: {self._attr_name} = {self._state}")
+        return self._state        
