@@ -4,6 +4,7 @@ import logging
 import requests
 import async_timeout
 from datetime import timedelta, datetime
+from zoneinfo import ZoneInfo
 import aiohttp
 import asyncio
 from bs4 import BeautifulSoup
@@ -313,7 +314,8 @@ class SensorLastActivity(SensorBase):
 
     def _extract_value(self):
         last_activity = self.sensor_data.get('last_activity', 'Unknown')
-        self._value = datetime.strptime(last_activity, "%y-%m-%d %H:%M:%S") #24-12-30 10:59:40
+        naive_dt = datetime.strptime(last_activity, "%y-%m-%d %H:%M:%S") #24-12-30 10:59:40
+        self._value = naive_dt.replace(tzinfo=ZoneInfo("America/Los_Angeles"))        
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -322,7 +324,7 @@ class SensorLastActivity(SensorBase):
         self.async_write_ha_state()
 
     @property    
-    def native_value(self) -> datetime.datetime:
+    def native_value(self) -> datetime:
         return self._value
     
     
