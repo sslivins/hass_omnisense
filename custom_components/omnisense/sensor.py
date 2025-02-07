@@ -212,7 +212,6 @@ class SensorBase(CoordinatorEntity, SensorEntity):
 class TemperatureSensor(SensorBase):
 
     device_class = SensorDeviceClass.TEMPERATURE
-    native_unit_of_measurement = "°C"
     _attr_icon = "mdi:thermometer"
 
     def __init__(self, coordinator=None, sid=None):
@@ -224,22 +223,25 @@ class TemperatureSensor(SensorBase):
 
         self._attr_unique_id = f"{self._sid}_temperature"
         self._attr_name = f"{self._sensor_name} Temperature"
+        self._value = None
+        self._extract_value()
 
-        self._extract_state()
-
-    def _extract_state(self):
-        self._state = self.sensor_data.get('temperature', 'Unknown') 
+    def _extract_value(self):
+        self._value = self.sensor_data.get('temperature', 'Unknown') 
 
     @callback
     def _handle_coordinator_update(self) -> None:
-        self._extract_state()
-        _LOGGER.debug(f"Updating sensor: {self._attr_name} = {self._state}°C")
+        self._extract_value()
+        _LOGGER.debug(f"Updating sensor: {self._attr_name} = {self.native_value}{self.native_unit_of_measurement}")
         self.async_write_ha_state()
+   
+    @property
+    def native_value(self) -> float:
+        return self._value
 
     @property
-    def state(self) -> float:
-        _LOGGER.debug(f"{self._attr_name} = {self._state}")
-        return self._state
+    def native_unit_of_measurement(self):
+        return "°C"    
     
 class SensorBatteryLevel(SensorBase):
     #battery is a ER14505 3.6V Lithium Thionyl Chloride Battery
@@ -253,7 +255,6 @@ class SensorBatteryLevel(SensorBase):
     ]
 
     device_class = SensorDeviceClass.BATTERY
-    native_unit_of_measurement = "%"
     _attr_icon = "mdi:battery"
     # Extract separate lists for interpolation
     voltages, soc_values = zip(*voltage_soc_table)
@@ -270,27 +271,32 @@ class SensorBatteryLevel(SensorBase):
 
         self._attr_unique_id = f"{self._sid}_battery"
         self._attr_name = f"{self._sensor_name} Battery Level"
-        self._extract_state()
+        self._value = None
+        self._extract_value()
 
-    def _extract_state(self):
+    def _extract_value(self):
         self.battery_voltage = self.sensor_data.get('battery_voltage', 'Unknown')
-        self._state = self.estimate_soc(float(self.battery_voltage))      
+        self._value = self._estimate_soc(float(self.battery_voltage))      
 
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        self._extract_state()
+        self._extract_value()
         _LOGGER.debug(f"Updating sensor: {self._attr_name} = {self._state}%")
         self.async_write_ha_state()
 
-    @property
-    def state(self) -> float:
-        _LOGGER.debug(f"{self._attr_name} = {self._state}")
-        return self._state
     
-    def estimate_soc(self, voltage):
+    def _estimate_soc(self, voltage):
         estimated_soc = self.soc_interpolator(voltage)
         return max(0, min(100, round(float(estimated_soc), 2)))
+    
+    @property    
+    def native_value(self) -> float:
+        return self._value
+    
+    @property
+    def native_unit_of_measurement(self):
+        return "%"
     
 class SensorLastActivity(SensorBase):
 
@@ -302,27 +308,27 @@ class SensorLastActivity(SensorBase):
 
         self._attr_unique_id = f"{self._sid}_last_activity"
         self._attr_name = f"{self._sensor_name} Last Activity"
-        self._extract_state()
+        self._value = None
+        self._extract_value()
 
-    def _extract_state(self):
+    def _extract_value(self):
         last_activity = self.sensor_data.get('last_activity', 'Unknown')
-        self._state = datetime.strptime(last_activity, "%y-%m-%d %H:%M:%S") #24-12-30 10:59:40
+        self._value = datetime.strptime(last_activity, "%y-%m-%d %H:%M:%S") #24-12-30 10:59:40
 
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        self._extract_state()
+        self._extract_value()
         self.async_write_ha_state()
 
-    @property
-    def state(self) -> datetime:
-        _LOGGER.debug(f"{self._attr_name} = {self._state}")
+    @property    
+    def native_value(self) -> float:
         return self._state
+    
     
 class SensorRelativeHumidity(SensorBase):
 
     device_class = SensorDeviceClass.HUMIDITY
-    native_unit_of_measurement = "%"
     _attr_icon = "mdi:water-percent"
 
     def __init__(self, coordinator=None, sid=None):
@@ -330,27 +336,30 @@ class SensorRelativeHumidity(SensorBase):
 
         self._attr_unique_id = f"{self._sid}_relative_humidity"
         self._attr_name = f"{self._sensor_name} Relative Humidity"
-        self._extract_state()
+        self._value = None
+        self._extract_value()
 
-    def _extract_state(self):
-        self._state = self.sensor_data.get('relative_humidity', 'Unknown')
+    def _extract_value(self):
+        self._value = self.sensor_data.get('relative_humidity', 'Unknown')
 
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        self._extract_state()
+        self._extract_value()
         self.async_write_ha_state()
 
+    @property    
+    def native_value(self) -> float:
+        return self._value
+    
     @property
-    def state(self) -> float:
-        _LOGGER.debug(f"{self._attr_name} = {self._state}")
-        return self._state    
+    def native_unit_of_measurement(self):
+        return "%"   
     
 
 class SensorAbsoluteHumidity(SensorBase):
 
     device_class = SensorDeviceClass.HUMIDITY
-    native_unit_of_measurement = "g/m³"
     _attr_icon = "mdi:water-percent"
 
     def __init__(self, coordinator=None, sid=None):
@@ -358,26 +367,29 @@ class SensorAbsoluteHumidity(SensorBase):
 
         self._attr_unique_id = f"{self._sid}_absolute_humidity"
         self._attr_name = f"{self._sensor_name} Absolute Humidity"
-        self._extract_state()
+        self._value = None 
+        self._extract_value()
 
-    def _extract_state(self):
-        self._state = self.sensor_data.get('absolute_humidity', 'Unknown')
+    def _extract_value(self):
+        self._value = self.sensor_data.get('absolute_humidity', 'Unknown')
 
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        self._extract_state()
+        self._extract_value()
         self.async_write_ha_state()
 
+    @property    
+    def native_value(self) -> float:
+        return self._value
+    
     @property
-    def state(self) -> float:
-        _LOGGER.debug(f"{self._attr_name} = {self._state}")
-        return self._state
+    def native_unit_of_measurement(self):
+        return "g/m³" 
     
 class SensorWoodMoisture(SensorBase):
 
     device_class = SensorDeviceClass.MOISTURE
-    native_unit_of_measurement = "%"
     _attr_icon = "mdi:water"
 
     def __init__(self, coordinator=None, sid=None):
@@ -385,27 +397,30 @@ class SensorWoodMoisture(SensorBase):
 
         self._attr_unique_id = f"{self._sid}_wood_moisture"
         self._attr_name = f"{self._sensor_name} Wood Moistute"
-        self._extract_state()
+        self._value = None
+        self._extract_value()
 
-    def _extract_state(self):
-        self._state = self.sensor_data.get('wood_pct', 'Unknown')
+    def _extract_value(self):
+        self._value = self.sensor_data.get('wood_pct', 'Unknown')
 
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        self._extract_state()
+        self._extract_value()
         self.async_write_ha_state()
 
+    @property    
+    def native_value(self) -> float:
+        return self._value
+    
     @property
-    def state(self) -> float:
-        _LOGGER.debug(f"{self._attr_name} = {self._state}")
-        return self._state        
+    def native_unit_of_measurement(self):
+        return "%"     
     
 
 class SensorDewPoint(SensorBase):
 
     device_class = SensorDeviceClass.TEMPERATURE
-    native_unit_of_measurement = "°C"
     _attr_icon = "mdi:thermometer"
 
     def __init__(self, coordinator=None, sid=None):
@@ -413,18 +428,22 @@ class SensorDewPoint(SensorBase):
 
         self._attr_unique_id = f"{self._sid}_dew_point"
         self._attr_name = f"{self._sensor_name} Dew Point"
-        self._extract_state()
+        self._value = None
+        self._extract_value()
 
-    def _extract_state(self):
-        self._state = self.sensor_data.get('dew_point', 'Unknown')
+    def _extract_value(self):
+        self._value = self.sensor_data.get('dew_point', 'Unknown')
 
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        self._extract_state()
+        self._extract_value()
         self.async_write_ha_state()
 
     @property
-    def state(self) -> float:
-        _LOGGER.debug(f"{self._attr_name} = {self._state}")
-        return self._state
+    def native_value(self) -> float:
+        return self._value
+
+    @property
+    def native_unit_of_measurement(self):
+        return "°C"   
