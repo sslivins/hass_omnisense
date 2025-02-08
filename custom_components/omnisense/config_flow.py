@@ -3,7 +3,7 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
-from . import const as CONF_SELECTED_SITES, CONF_SELECTED_SENSORS
+from const import CONF_SELECTED_SITES, CONF_SELECTED_SENSORS
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.selector import SelectSelector
 from omnisense import Omnisense
