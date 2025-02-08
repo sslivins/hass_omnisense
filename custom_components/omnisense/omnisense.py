@@ -122,7 +122,7 @@ class Omnisense:
 
     async def get_sensor_data(self, site_ids: Union[str, List[str]] = None, sensor_ids: Union[str, List[str]] = None) -> dict:
         """Fetch sensor data from Omnisense for specified sites and sensor_ids.  An empty sensor_ids list will return all sensors for the specified sites.
-        Returns a dictionary of sensor data in the form of site_id: { sensor_id: { description, last_activity, status, temperature, relative_humidity, absolute_humidity, dew_point, wood_pct, battery_voltage, sensor_type, site_name } } """
+        Returns a dictionary of sensor data in the form of sensor_id: { description, last_activity, status, temperature, relative_humidity, absolute_humidity, dew_point, wood_pct, battery_voltage, sensor_type, site_name } """
         if self._session is None:
             if not await self.login():
                 return {}
@@ -136,8 +136,6 @@ class Omnisense:
         all_sensors = {}
         for site_id in site_ids:
             sensor_page_url = f"{SENSOR_LIST_URL}?siteNbr={site_id}"
-
-            site_sensors = {}
 
             try:
                 async with self._session.get(sensor_page_url, timeout=10) as response:
@@ -179,7 +177,7 @@ class Omnisense:
                                 if desc == "~click to edit~":
                                     desc = "<description not set>"
 
-                                site_sensors[sid] = {
+                                all_sensors[sid] = {
                                     "description": desc,
                                     "last_activity": tds[2].get_text(strip=True),
                                     "status": tds[3].get_text(strip=True),
@@ -197,8 +195,6 @@ class Omnisense:
             except Exception:
                 _LOGGER.error(f"Error fetching/parsing sensor data for site id '{site_id}'.")
                 continue
-
-            all_sensors[site_id] = site_sensors
 
         return all_sensors
 
