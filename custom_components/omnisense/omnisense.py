@@ -110,9 +110,8 @@ class Omnisense:
                 return {}
 
             #only return a dictionary of sensor_id: description, sensor_type
-            for site_id in site_ids:
-                for sensor_id, sensor_info in sensor_data[site_id].items():
-                    sensors[sensor_id] = {"description" : sensor_info["description"], "sensor_type" : sensor_info["sensor_type"], "site_name" : sensor_info["site_name"]}
+            for sensor_id, sensor_info in sensor_data.items():
+                sensors[sensor_id] = {"description" : sensor_info["description"], "sensor_type" : sensor_info["sensor_type"], "site_name" : sensor_info["site_name"]}
 
         except Exception as e:
             _LOGGER.error("Error fetching sensors: %s", e)
