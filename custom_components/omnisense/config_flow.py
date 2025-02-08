@@ -6,7 +6,7 @@ from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
 from .const import CONF_SELECTED_SITES, CONF_SELECTED_SENSORS
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.selector import SelectSelector
-from omnisense import Omnisense
+from .omnisense import Omnisense
 
 _LOGGER = logging.getLogger(__name__)
 
