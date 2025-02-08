@@ -27,10 +27,16 @@ class Omnisense:
         self._password = None
         self._session = None
     
-    async def login(self, username: str, password: str) -> bool:
+    async def login(self, username: str=None, password: str=None) -> bool:
 
-        self._username = username
-        self._password = password
+        #if username/password are not provided, use the stored credentials
+        if not username or not password:
+            if not self._username or not self._password:
+                _LOGGER.error("No username or password provided.")
+                return False
+        else:
+            self._username = username
+            self._password = password
 
         payload = {
             "userId": self._username,
