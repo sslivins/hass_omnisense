@@ -16,7 +16,7 @@ from homeassistant.core import callback
 import numpy as np
 from scipy.interpolate import interp1d
 
-from omnisense import Omnisense
+from .omnisense import Omnisense
 
 from .const import DOMAIN
 
