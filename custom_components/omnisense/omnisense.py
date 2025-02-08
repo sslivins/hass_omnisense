@@ -33,7 +33,7 @@ class Omnisense:
         if not username or not password:
             if not self._username or not self._password:
                 _LOGGER.error("No username or password provided.")
-                return False
+                raise Exception("No username or password provided.")
         else:
             self._username = username
             self._password = password
@@ -54,7 +54,7 @@ class Omnisense:
                     raise Exception("Login failed; check your credentials.")
         except Exception as err:
             _LOGGER.error("Error during login: %s", err)
-            return False
+            raise err
         
         _LOGGER.info("Login successful.")
         return True
