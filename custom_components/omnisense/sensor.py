@@ -12,7 +12,8 @@ from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity, Senso
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator, UpdateFailed
 from homeassistant.core import callback
-
+from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
+from .const import CONF_SELECTED_SITES, CONF_SELECTED_SENSORS
 import numpy as np
 from scipy.interpolate import interp1d
 
@@ -57,10 +58,10 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
             update_method=self._omnisense_async_update_data,
         )
 
-        self.username = data.get("username")
-        self.password = data.get("password")
-        self.sites = data.get("selected_sites", [])
-        self.sensor_ids = data.get("selected_sensor_ids", [])
+        self.username = data.get(CONF_USERNAME)
+        self.password = data.get(CONF_PASSWORD)
+        self.sites = data.get(CONF_SELECTED_SITES, [])
+        self.sensor_ids = data.get(CONF_SELECTED_SENSORS, [])
 
         self.omnisense = Omnisense()
 
