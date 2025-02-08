@@ -1,5 +1,4 @@
 import os
-import re
 import logging
 import requests
 import async_timeout
@@ -17,107 +16,11 @@ from homeassistant.core import callback
 import numpy as np
 from scipy.interpolate import interp1d
 
+from omnisense import Omnisense
+
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
-
-# Configuration keys
-CONF_SITE_NAME = "site_name"       # The name of the site (e.g., "home")
-CONF_SENSOR_IDS = "sensor_ids"     # List of sensor IDs to extract (empty = all)
-CONF_USERNAME = "username"         # Login username
-CONF_PASSWORD = "password"         # Login password
-
-
-# Fixed URLs
-LOGIN_URL = "https://www.omnisense.com/user_login.asp"
-SITE_LIST_URL = "https://www.omnisense.com/site_select.asp"
-SENSOR_LIST_URL = "https://www.omnisense.com/sensor_select.asp"
-
-async def _fetch_sensor_data(username, password, sites, sensor_ids=None):
-    """Fetch sensor data from Omnisense for specified sites asynchronously and return a dictionary of sensor data."""
-    payload = {
-        "userId": username,
-        "userPass": password,
-        "btnAct": "Log-In",
-        "target": ""
-    }
-
-    async with aiohttp.ClientSession() as session:
-        try:
-            # Perform login
-            async with session.post(LOGIN_URL, data=payload, timeout=10) as response:
-                if response.status != 200 or "User Log-In" in await response.text():
-                    raise Exception("Login failed; check your credentials.")
-        except Exception as err:
-            _LOGGER.error("Error during login: %s", err)
-            return {}
-
-        try:
-            # Fetch site list
-            async with session.get(SITE_LIST_URL, timeout=10) as response:
-                if response.status != 200:
-                    raise Exception("Error fetching job sites page.")
-                soup = BeautifulSoup(await response.text(), "html.parser")
-        except Exception as err:
-            _LOGGER.error("Error fetching site list: %s", err)
-            return {}
-
-        all_sensors = {}
-        for site_id, site_name in sites.items():
-            sensor_page_url = f"{SENSOR_LIST_URL}?siteNbr={site_id}"
-
-            try:
-                async with session.get(sensor_page_url, timeout=10) as response:
-                    if response.status != 200:
-                        raise Exception(f"Error fetching sensor data for site '{site_name}'.")
-                    soup = BeautifulSoup(await response.text(), "html.parser")
-                    for table in soup.select("table.sortable.table"):
-                        sensor_type = None
-                        table_id = table.get("id", "")
-                        if table_id.startswith("sensorType"):
-                            sensor_type = f"S-{table_id[len("sensorType"):]}"
-                        if not sensor_type:
-                            caption = table.find("caption")
-                            if caption and caption.text:
-                                m = re.search(r"Sensor Type\s*(\d+)", caption.text)
-                                if m:
-                                    sensor_type = f"S-{m.group(1)}"
-                        for row in table.select("tr.sensorTable"):
-                            tds = row.find_all("td")
-                            if len(tds) >= 10:
-                                sid = tds[0].get_text(strip=True)
-                                if sensor_ids and sid not in sensor_ids:
-                                    continue
-                                try:
-                                    temperature = float(tds[4].get_text(strip=True))
-                                except ValueError:
-                                    temperature = None
-
-                                desc = tds[1].get_text(strip=True)
-                                if desc == "~click to edit~":
-                                    desc = "<empty>"
-
-                                all_sensors[sid] = {
-                                    "description": desc,
-                                    "last_activity": tds[2].get_text(strip=True),
-                                    "status": tds[3].get_text(strip=True),
-                                    "temperature": temperature,
-                                    "relative_humidity": tds[5].get_text(strip=True),
-                                    "absolute_humidity": tds[6].get_text(strip=True),
-                                    "dew_point": tds[7].get_text(strip=True),
-                                    "wood_pct": tds[8].get_text(strip=True),
-                                    "battery_voltage": tds[9].get_text(strip=True),
-                                    "sensor_type": sensor_type,
-                                    "sensor_id": sid,
-                                    "site_name": site_name,
-                                }
-            except Exception as err:
-                _LOGGER.error("Error fetching/parsing sensor data for site '%s': %s", site_name, err)
-
-        _LOGGER.debug(f"Got Sensor Data: {all_sensors}")
-
-        return all_sensors
-
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Omnisense sensor(s) from a config entry using DataUpdateCoordinator."""
@@ -159,9 +62,15 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
         self.sites = data.get("selected_sites", [])
         self.sensor_ids = data.get("selected_sensor_ids", [])
 
+        self.omnisense = Omnisense()
+
     async def _async_setup(self):
 
-        self.update_interval = timedelta(seconds=45)
+        try:
+            await self.omnisense.login(self.username, self.password)
+        except Exception as err:
+            _LOGGER.error("Failed to login to omnisense: %s", err)
+            raise UpdateFailed("Failed to create Omnisense instance")
     #     """Set up the coordinator
 
     #     This is the place to set up your coordinator,
@@ -180,8 +89,10 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
         # Note: asyncio.TimeoutError and aiohttp.ClientError are already
         # handled by the data update coordinator.
         _LOGGER.debug(f"Fetching new sensor data")
+        # async with async_timeout.timeout(10):
+        #     return await _fetch_sensor_data(self.username, self.password, self.sites, self.sensor_ids)
         async with async_timeout.timeout(10):
-            return await _fetch_sensor_data(self.username, self.password, self.sites, self.sensor_ids)
+            return await self.omnisense.get_sensor_data(self.sites, self.sensor_ids)
 
 
 class SensorBase(CoordinatorEntity, SensorEntity):

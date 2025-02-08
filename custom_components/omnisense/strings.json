@@ -10,7 +10,11 @@
           "description": "Please enter your username and password to proceed to the next step.",
           "data": {
             "username": "Username",
-            "password": "Password"
+            "password": "Password",
+            "no_sites_found": "No sites found",
+            "omnisense_login_failed": "Login failed. Please check your credentials and try again.",
+            "failed_to_get_sites": "Failed to get sites. Please try again.",
+            "no_sensors_selected": "No sensors selected. Please select at least one sensor to proceed."
           }
         },
         "select_site": {

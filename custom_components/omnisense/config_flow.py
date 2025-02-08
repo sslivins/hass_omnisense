@@ -1,13 +1,12 @@
-import re
 import logging
 import voluptuous as vol
-import requests
-from bs4 import BeautifulSoup
 
 from homeassistant import config_entries
 from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
+from . import const as CONF_SELECTED_SITES, CONF_SELECTED_SENSORS
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.selector import SelectSelector
+from omnisense import Omnisense
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -17,6 +16,9 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
     MINOR_VERSION = 1
 
+    def __init__(self):
+        self.omnisense = Omnisense()
+
     async def async_step_user(self, user_input=None):
         """Handle the initial step where the user enters credentials."""
         errors = {}
@@ -24,13 +26,23 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self.username = user_input.get(CONF_USERNAME)
             self.password = user_input.get(CONF_PASSWORD)
 
+            try:
+                 self.omnisense.login(self.username, self.password)
+            except Exception as err:  # or a more specific exception if known
+                _LOGGER.error("Failed to create Omnisense instance: %s", err)
+                errors["base"] = "omnisense_login_failed"
+   
             # Validate credentials and fetch available sites
-            sites = await self.hass.async_add_executor_job(self._fetch_sites)
-            if sites:
-                self.available_sites = sites
-                return await self.async_step_select_site()
-            else:
-                errors["base"] = "invalid_auth"
+            try:
+                sites = await self.omnisense.get_site_list()
+                if sites:
+                    self.available_sites = sites
+                    return await self.async_step_select_site()
+                else:
+                    errors["base"] = "no_sites_found"
+            except Exception as err:  # or a more specific exception if known
+                _LOGGER.error("Error fetching site list: %s", err)
+                errors["base"] = "failed_to_get_sites"
 
         schema = vol.Schema({
             vol.Required(CONF_USERNAME): str,
@@ -42,7 +54,7 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle the site selection step."""
         errors = {}
         if user_input is not None:
-            selected_sites = user_input.get("selected_sites", [])
+            selected_sites = user_input.get(CONF_SELECTED_SITES, [])
             if selected_sites:
                 self.selected_sites = {site_id: self.available_sites[site_id] for site_id in selected_sites}
                 return await self.async_step_sensors()
@@ -71,26 +83,27 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle the sensor selection step."""
         errors = {}
         if user_input is not None:
-            selected_sensors = user_input.get("selected_sensors", [])
+            selected_sensors = user_input.get(CONF_SELECTED_SENSORS, [])
             if selected_sensors:
                 data = {
                     CONF_USERNAME: self.username,
                     CONF_PASSWORD: self.password,
-                    "selected_sites": self.selected_sites,
-                    "selected_sensor_ids": selected_sensors,
+                    CONF_SELECTED_SITES: self.selected_sites,
+                    CONF_SELECTED_SENSORS: selected_sensors,
                 }
                 return self.async_create_entry(title="Omnisense", data=data)
             else:
-                errors["base"] = "select_at_least_one_sensor"
+                errors["base"] = "no_sensors_selected"
 
         # Fetch sensors for the selected sites
-        sensors = await self.hass.async_add_executor_job(self._fetch_sensors)
+        #sensors = await self.hass.async_add_executor_job(self._fetch_sensors)
+        sensors = await self.omnisense.get_site_sensor_list(self.selected_sites.keys())
         if not sensors:
             errors["base"] = "no_sensors_found"
             return self.async_show_form(step_id="sensors", data_schema=vol.Schema({}), errors=errors)
 
         # Create sensor options mapping sensor IDs to labels
-        available_sensors = {sid: f"{sid} - {info.get('description', '<empty>')}" for sid, info in sensors.items()}
+        available_sensors = {sid: f"{sid} - {info.get('sensor_type', "")} - {info.get('description', '<empty>')}" for sid, info in sensors.items()}
 
         # schema = vol.Schema({
         #     vol.Required("selected_sensors"): cv.multi_select(available_sensors)
@@ -107,73 +120,10 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         })
 
         return self.async_show_form(step_id="sensors", data_schema=schema, errors=errors)
+    
+    async def async_finish_flow(self, result):
+        if self.omnisense:
+            await self.omnisense.close()
 
-    def _fetch_sites(self):
-        """Fetch available sites using the provided credentials."""
-        session = requests.Session()
-        payload = {
-            "userId": self.username,
-            "userPass": self.password,
-            "btnAct": "Log-In",
-            "target": ""
-        }
-        try:
-            response = session.post("https://www.omnisense.com/user_login.asp", data=payload, timeout=10)
-            if response.status_code != 200 or "User Log-In" in response.text:
-                return {}
-
-            response = session.get("https://www.omnisense.com/site_select.asp", timeout=10)
-            if response.status_code != 200:
-                return {}
-
-            soup = BeautifulSoup(response.text, "html.parser")
-            sites = {}
-            for link in soup.find_all("a", onclick=True):
-                onclick = link.get("onclick", "")
-                match = re.search(r"ShowSiteDetail\('(\d+)'\)", onclick)
-                if match:
-                    site_id = match.group(1)
-                    site_name = link.get_text(strip=True)
-                    sites[site_id] = site_name
-            return sites
-        except Exception as e:
-            _LOGGER.error("Error fetching sites: %s", e)
-            return {}
-
-    def _fetch_sensors(self):
-        """Fetch sensors for the selected sites using the stored credentials."""
-        session = requests.Session()
-        payload = {
-            "userId": self.username,
-            "userPass": self.password,
-            "btnAct": "Log-In",
-            "target": ""
-        }
-        try:
-            response = session.post("https://www.omnisense.com/user_login.asp", data=payload, timeout=10)
-            if response.status_code != 200 or "User Log-In" in response.text:
-                return {}
-
-            sensors = {}
-            for site_id, site_name in self.selected_sites.items():
-                sensor_page_url = f"https://www.omnisense.com/sensor_select.asp?siteNbr={site_id}"
-                response = session.get(sensor_page_url, timeout=10)
-                if response.status_code != 200:
-                    continue
-
-                soup = BeautifulSoup(response.text, "html.parser")
-                for table in soup.select("table.sortable.table"):
-                    for row in table.select("tr.sensorTable"):
-                        tds = row.find_all("td")
-                        if len(tds) >= 10:
-                            sid = tds[0].get_text(strip=True)
-                            desc = tds[1].get_text(strip=True)
-                            if desc == "~click to edit~":
-                                desc = "<description not set>"
-                            sensors[sid] = {"description": desc}
-
-            _LOGGER.debug("Fetched sensors: %s", sensors)
-            return sensors
-        except Exception as e:
-            _LOGGER.error("Error fetching sensors: %s", e)
-            return {}
+        return result
+        
