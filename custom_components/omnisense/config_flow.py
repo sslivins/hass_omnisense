@@ -27,7 +27,7 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self.password = user_input.get(CONF_PASSWORD)
 
             try:
-                 self.omnisense.login(self.username, self.password)
+                 await self.omnisense.login(self.username, self.password)
             except Exception as err:  # or a more specific exception if known
                 _LOGGER.error("Failed to create Omnisense instance: %s", err)
                 errors["base"] = "omnisense_login_failed"
