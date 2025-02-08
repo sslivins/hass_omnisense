@@ -90,25 +90,29 @@ class Omnisense:
 
         return sites
     
-    async def get_site_sensor_list(self, site_id: str) -> dict:
-        '''  Fetch sensors for the selected site using the stored credentials.  Returns a dictionary of sensor_id: { description, sensor_type } '''
+    async def get_site_sensor_list(self, site_ids: Union[str, List[str]] = None) -> dict:
+        '''  Fetch sensors for the selected site using the stored credentials.  Returns a dictionary of sensor_id: { description, sensor_type, site_name } '''
 
         if self._session is None:
             if not await self.login():
                 return {}
             
+        if isinstance(site_ids, str):
+            site_ids = [site_ids]            
+            
         sensors = {}
 
         try:
-            sensor_data = await self.get_sensor_data(site_ids=[site_id])
+            sensor_data = await self.get_sensor_data(site_ids)
 
             #if there is no sensor data, return an empty dictionary
             if not sensor_data:
                 return {}
 
-            #only return a dictionary of sensor_id: description
-            for sensor_id, sensor_info in sensor_data[site_id].items():
-                sensors[sensor_id] = {"description" : sensor_info["description"], "sensor_type" : sensor_info["sensor_type"]}
+            #only return a dictionary of sensor_id: description, sensor_type
+            for site_id in site_ids:
+                for sensor_id, sensor_info in sensor_data[site_id].items():
+                    sensors[sensor_id] = {"description" : sensor_info["description"], "sensor_type" : sensor_info["sensor_type"], "site_name" : sensor_info["site_name"]}
 
         except Exception as e:
             _LOGGER.error("Error fetching sensors: %s", e)
