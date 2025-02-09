@@ -17,7 +17,7 @@ from .const import CONF_SELECTED_SITES, CONF_SELECTED_SENSORS
 import numpy as np
 from scipy.interpolate import interp1d
 
-from .omnisense import Omnisense
+from pyomnisense import Omnisense
 
 from .const import DOMAIN
 
