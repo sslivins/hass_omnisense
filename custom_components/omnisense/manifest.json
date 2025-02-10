@@ -5,8 +5,8 @@
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/sslivins/hass_omnisense",
-  "iot_class": "cloud_polling",
   "integration_type": "hub",
+  "iot_class": "cloud_polling",  
   "issue_tracker": "https://github.com/sslivins/hass_omnisense/issues",  
   "requirements": [
     "beautifulsoup4==4.12.3",
