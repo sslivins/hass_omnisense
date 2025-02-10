@@ -1,7 +1,7 @@
 # hass_omnisense
 
-![HACS validation](https://github.com/sslivins/pyomnisense/actions/workflows/hacs_validate.yml/badge.svg)
-![Hassfest Validation](https://github.com/sslivins/pyomnisense/actions/workflows/hassfest.yml/badge.svg)
+![HACS validation](https://github.com/sslivins/hass_omnisense/actions/workflows/hacs_validate.yml/badge.svg)
+![Hassfest Validation](https://github.com/sslivins/hass_omnisense/actions/workflows/hassfest.yml/badge.svg)
 
 Home Assistant integration for OmniSense sensors.
 
