@@ -61,13 +61,6 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             else:
                 errors["base"] = "select_at_least_one_site"
 
-        # Create site options mapping site IDs to labels
-        # site_options = {site_id: site_name for site_id, site_name in self.available_sites.items()}
-
-        # schema = vol.Schema({
-        #     vol.Required("selected_sites"): cv.multi_select(site_options)
-        # })
-
         schema = vol.Schema({
             vol.Required("selected_sites"): SelectSelector({
                 "options": [
@@ -126,3 +119,20 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return result
         
+class OmnisenseOptionsFlow(config_entries.OptionsFlow):
+    """Handle options flow for OmniSense integration."""
+
+    def __init__(self, config_entry):
+        self.config_entry = config_entry
+
+    async def async_step_init(self, user_input=None):
+        """Manage the options for the custom component."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        options = {
+            vol.Optional(CONF_SELECTED_SITES, default=self.config_entry.options.get(CONF_SELECTED_SITES, [])): cv.multi_select(self.config_entry.data[CONF_SELECTED_SITES]),
+            vol.Optional(CONF_SELECTED_SENSORS, default=self.config_entry.options.get(CONF_SELECTED_SENSORS, [])): cv.multi_select(self.config_entry.data[CONF_SELECTED_SENSORS]),
+        }
+
+        return self.async_show_form(step_id="init", data_schema=vol.Schema(options))        
