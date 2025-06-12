@@ -54,7 +54,7 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(seconds=45),
+            update_interval=timedelta(minutes=45),
             update_method=self._omnisense_async_update_data,
         )
 
@@ -299,7 +299,7 @@ class SensorAbsoluteHumidity(SensorBase):
     
     @property
     def native_unit_of_measurement(self):
-        return "g/m³" 
+        return "g/m^3" 
     
 class SensorWoodMoisture(SensorBase):
 

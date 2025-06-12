@@ -9,12 +9,12 @@
   "iot_class": "cloud_polling",  
   "issue_tracker": "https://github.com/sslivins/hass_omnisense/issues",  
   "requirements": [
-    "beautifulsoup4==4.12.3",
-    "Requests==2.32.3",
-    "voluptuous==0.15.2",
-    "numpy==2.2.2",
-    "scipy==1.15.1",
-    "pyomnisense==0.1.0"
+    "beautifulsoup4",
+    "Requests",
+    "voluptuous",
+    "numpy",
+    "scipy",
+    "pyomnisense"
   ],
-  "version": "0.1.6"
+  "version": "0.1.7"
 }

@@ -1,6 +1,6 @@
-beautifulsoup4==4.12.3
-homeassistant==2024.3.3
-python-dotenv==1.0.1
-Requests==2.32.3
-voluptuous==0.15.2
-pyomnisense==0.1.1
+beautifulsoup4
+homeassistant
+python-dotenv
+Requests
+voluptuous
+pyomnisense
