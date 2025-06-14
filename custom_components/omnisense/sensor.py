@@ -59,7 +59,7 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(minutes=15),
+            update_interval=timedelta(minutes=1),
             update_method=self._omnisense_async_update_data,
         )
 
@@ -105,6 +105,7 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
         async with async_timeout.timeout(10):
             try:
                 data =  await self.omnisense.get_sensor_data(self.sites, self.sensor_ids)
+                _LOGGER.debug(f"Fetched sensor data: {data}")
             except Exception as err:
                 _LOGGER.error("Error fetching sensor data: %s", err)
                 raise UpdateFailed(f"Error fetching sensor data: {err}")
@@ -120,24 +121,37 @@ class SensorBase(CoordinatorEntity, SensorEntity):
     should_poll = False
 
     def __init__(self, coordinator=None, sid=None):
-
         super().__init__(coordinator)
         self._sid = sid
 
-        self.sensor_data = self.coordinator.data.get(self._sid, {})
+        # Do NOT cache self.sensor_data here!
+        # self.sensor_data = self.coordinator.data.get(self._sid, {})
 
-        self._sid = self.sensor_data.get('sensor_id', 'Unknown')
-        self._sensor_name = self.sensor_data.get('description', 'Unknown')
-        self._sensor_type = self.sensor_data.get('sensor_type', 'Unknown')
+        # These can be set once, as they are static
+        self._sid = sid
+        self._sensor_name = None
+        self._sensor_type = None
+
+    def _get_sensor_data(self, field=None, error_value='Unknown'):
+        data = self.coordinator.data.get(self._sid, {})
+        if field is None:
+            return data
+        value = data.get(field, error_value)
+        if value is None:
+            return error_value
+        return value
 
     @property
     def device_info(self):
-        """Return device information about this sensor."""
+        # Always get the latest data
+        sensor_id =  self._get_sensor_data('sensor_id')
+        sensor_name = self._get_sensor_data('description')
+        sensor_type = self._get_sensor_data('sensor_type')
         return {
-            "identifiers": {(DOMAIN, self._sid)},
-            "name": self._sensor_name,
+            "identifiers": {(DOMAIN, sensor_id)},
+            "name": sensor_name,
             "manufacturer": "OmniSense",
-            "model": self._sensor_type,
+            "model": sensor_type,
             "sw_version": "N/A",
         }
 
@@ -159,7 +173,7 @@ class TemperatureSensor(SensorBase):
         self._extract_value()
 
     def _extract_value(self):
-        self._value = self.sensor_data.get('temperature', 'Unknown') 
+        self._value = self._get_sensor_data('temperature')
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -192,7 +206,8 @@ class SensorBatteryLevel(SensorBase):
         self._extract_value()
 
     def _extract_value(self):
-        self.battery_voltage = self.sensor_data.get('battery_voltage', 'Unknown')
+        self.battery_voltage = self._get_sensor_data('battery_voltage')        
+        
         try:
             voltage = float(self.battery_voltage)
         except Exception:
@@ -234,9 +249,13 @@ class SensorLastActivity(SensorBase):
         self._extract_value()
 
     def _extract_value(self):
-        last_activity = self.sensor_data.get('last_activity', 'Unknown')
-        naive_dt = datetime.strptime(last_activity, "%y-%m-%d %H:%M:%S") #24-12-30 10:59:40
-        self._value = naive_dt.replace(tzinfo=ZoneInfo("America/Los_Angeles"))        
+
+        last_activity = self._get_sensor_data('last_activity')          
+
+        naive_dt = datetime.strptime(last_activity, "%y-%m-%d %H:%M:%S") #time stamp is in the format "YY-MM-DD HH:MM:SS"
+        self._value = naive_dt.replace(tzinfo=ZoneInfo("America/Los_Angeles"))
+        
+        _LOGGER.debug(f"Updating sensor: {self._attr_name} = last activity at {self._value}")
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -263,7 +282,7 @@ class SensorRelativeHumidity(SensorBase):
         self._extract_value()
 
     def _extract_value(self):
-        self._value = self.sensor_data.get('relative_humidity', 'Unknown')
+        self._value = self._get_sensor_data('relative_humidity')           
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -294,7 +313,9 @@ class SensorAbsoluteHumidity(SensorBase):
         self._extract_value()
 
     def _extract_value(self):
-        self._value = self.sensor_data.get('absolute_humidity', 'Unknown')
+
+        self._value = self._get_sensor_data('absolute_humidity')           
+        
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -324,7 +345,8 @@ class SensorWoodMoisture(SensorBase):
         self._extract_value()
 
     def _extract_value(self):
-        self._value = self.sensor_data.get('wood_pct', 'Unknown')
+
+        self._value = self._get_sensor_data('wood_pct')
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -355,7 +377,9 @@ class SensorDewPoint(SensorBase):
         self._extract_value()
 
     def _extract_value(self):
-        self._value = self.sensor_data.get('dew_point', 'Unknown')
+        
+        self._value = self._get_sensor_data('dew_point')           
+        
 
     @callback
     def _handle_coordinator_update(self) -> None:
