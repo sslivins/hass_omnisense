@@ -90,7 +90,7 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # Fetch sensors for the selected sites
         #sensors = await self.hass.async_add_executor_job(self._fetch_sensors)
-        sensors = await self.omnisense.get_site_sensor_list(self.selected_sites.keys())
+        sensors = await self.omnisense.get_site_sensor_list(list(self.selected_sites.keys()))
         if not sensors:
             errors["base"] = "no_sensors_found"
             return self.async_show_form(step_id="sensors", data_schema=vol.Schema({}), errors=errors)
