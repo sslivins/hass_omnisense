@@ -45,6 +45,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         entities.append(SensorAbsoluteHumidity(coordinator, sid))
         entities.append(SensorWoodMoisture(coordinator, sid))
         entities.append(SensorDewPoint(coordinator, sid))
+        entities.append(SensorBatteryVoltage(coordinator, sid))
         
     async_add_entities(entities)
 
@@ -124,13 +125,13 @@ class SensorBase(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._sid = sid
 
-        # Do NOT cache self.sensor_data here!
-        # self.sensor_data = self.coordinator.data.get(self._sid, {})
-
         # These can be set once, as they are static
-        self._sid = sid
-        self._sensor_name = None
-        self._sensor_type = None
+        sid = self._get_sensor_data('sensor_id')
+        if sid != self._sid:
+            _LOGGER.warning(f"Sensor ID mismatch: expected {self._sid}, got {sid}. Using {self._sid} instead.")
+        
+        self._sensor_name = self._get_sensor_data('description')
+        self._sensor_type = self._get_sensor_data('sensor_type')
 
     def _get_sensor_data(self, field=None, error_value='Unknown'):
         data = self.coordinator.data.get(self._sid, {})
@@ -143,15 +144,12 @@ class SensorBase(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-        # Always get the latest data
-        sensor_id =  self._get_sensor_data('sensor_id')
-        sensor_name = self._get_sensor_data('description')
-        sensor_type = self._get_sensor_data('sensor_type')
+        """Return device information about this sensor."""
         return {
-            "identifiers": {(DOMAIN, sensor_id)},
-            "name": sensor_name,
+            "identifiers": {(DOMAIN, self._sid)},
+            "name": self._sensor_name,
             "manufacturer": "OmniSense",
-            "model": sensor_type,
+            "model": self._sensor_type,
             "sw_version": "N/A",
         }
 
@@ -394,3 +392,33 @@ class SensorDewPoint(SensorBase):
     @property
     def native_unit_of_measurement(self):
         return "°C"   
+    
+class SensorBatteryVoltage(SensorBase):
+    device_class = SensorDeviceClass.VOLTAGE
+    _attr_icon = "mdi:battery"
+
+    def __init__(self, coordinator=None, sid=None):
+        super().__init__(coordinator, sid)
+        self._attr_unique_id = f"{self._sid}_battery_voltage"
+        self._attr_name = f"{self._sensor_name} Battery Voltage"
+        self._value = None
+        self._extract_value()
+
+    def _extract_value(self):
+        try:
+            self._value = float(self._get_sensor_data('battery_voltage'))
+        except Exception:
+            self._value = None
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        self._extract_value()
+        self.async_write_ha_state()
+
+    @property
+    def native_value(self) -> float:
+        return self._value
+
+    @property
+    def native_unit_of_measurement(self):
+        return "V"    
