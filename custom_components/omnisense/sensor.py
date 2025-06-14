@@ -14,8 +14,6 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpda
 from homeassistant.core import callback
 from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
 from .const import CONF_SELECTED_SITES, CONF_SELECTED_SENSORS
-import numpy as np
-from scipy.interpolate import interp1d
 
 from pyomnisense import Omnisense
 
@@ -396,6 +394,7 @@ class SensorDewPoint(SensorBase):
 class SensorBatteryVoltage(SensorBase):
     device_class = SensorDeviceClass.VOLTAGE
     _attr_icon = "mdi:battery"
+    _attr_suggested_display_precision = 1  # Show 1 decimal place
 
     def __init__(self, coordinator=None, sid=None):
         super().__init__(coordinator, sid)
@@ -406,7 +405,7 @@ class SensorBatteryVoltage(SensorBase):
 
     def _extract_value(self):
         try:
-            self._value = float(self._get_sensor_data('battery_voltage'))
+            self._value = round(float(self._get_sensor_data('battery_voltage')), 1)
         except Exception:
             self._value = None
 
@@ -421,4 +420,4 @@ class SensorBatteryVoltage(SensorBase):
 
     @property
     def native_unit_of_measurement(self):
-        return "V"    
+        return "V"
