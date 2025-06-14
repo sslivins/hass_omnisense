@@ -180,7 +180,7 @@ class SensorBatteryLevel(SensorBase):
     _attr_icon = "mdi:battery"
 
     FULL_VOLTAGE = 3.40  # Voltage of a new battery
-    EMPTY_VOLTAGE = 3.10  # Voltage considered empty
+    EMPTY_VOLTAGE = 2.80  # Voltage considered empty
     STEP_VOLTAGE = 0.03   # Voltage drop per 10% step
 
     def __init__(self, coordinator=None, sid=None):
