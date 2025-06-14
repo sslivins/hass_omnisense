@@ -207,14 +207,10 @@ class SensorBatteryLevel(SensorBase):
     def _estimate_soc(self, voltage):
         if voltage >= self.FULL_VOLTAGE:
             return 100
-        for pct in range(90, 0, -10):
-            threshold = self.FULL_VOLTAGE - self.STEP_VOLTAGE * ((100 - pct) // 10)
-            if voltage >= threshold:
-                return pct
         if voltage <= self.EMPTY_VOLTAGE:
             return 0
-        # If between last step and empty, return 0
-        return 0
+        percent = ((voltage - self.EMPTY_VOLTAGE) / (self.FULL_VOLTAGE - self.EMPTY_VOLTAGE)) * 100
+        return round(percent)
 
     @property    
     def native_value(self) -> float:
