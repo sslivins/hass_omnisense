@@ -179,6 +179,10 @@ class SensorBatteryLevel(SensorBase):
     device_class = SensorDeviceClass.BATTERY
     _attr_icon = "mdi:battery"
 
+    FULL_VOLTAGE = 3.40  # Voltage of a new battery
+    EMPTY_VOLTAGE = 3.10  # Voltage considered empty
+    STEP_VOLTAGE = 0.03   # Voltage drop per 10% step
+
     def __init__(self, coordinator=None, sid=None):
         super().__init__(coordinator, sid)
         _LOGGER.debug(f"Initializing battery entity for sensor: {self._sid}")        
@@ -201,28 +205,16 @@ class SensorBatteryLevel(SensorBase):
         self.async_write_ha_state()
 
     def _estimate_soc(self, voltage):
-        if voltage >= 3.60:
+        if voltage >= self.FULL_VOLTAGE:
             return 100
-        elif voltage >= 3.55:
-            return 90
-        elif voltage >= 3.50:
-            return 80
-        elif voltage >= 3.45:
-            return 70
-        elif voltage >= 3.40:
-            return 60
-        elif voltage >= 3.35:
-            return 50
-        elif voltage >= 3.30:
-            return 40
-        elif voltage >= 3.25:
-            return 30
-        elif voltage >= 3.20:
-            return 20
-        elif voltage >= 3.10:
-            return 10
-        else:
+        for pct in range(90, 0, -10):
+            threshold = self.FULL_VOLTAGE - self.STEP_VOLTAGE * ((100 - pct) // 10)
+            if voltage >= threshold:
+                return pct
+        if voltage <= self.EMPTY_VOLTAGE:
             return 0
+        # If between last step and empty, return 0
+        return 0
 
     @property    
     def native_value(self) -> float:
