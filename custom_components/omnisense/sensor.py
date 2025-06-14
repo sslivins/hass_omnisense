@@ -73,10 +73,15 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
     async def _async_setup(self):
 
         try:
-            await self.omnisense.login(self.username, self.password)
+            success = await self.omnisense.login(self.username, self.password)
+            await self.omnisense.close() 
         except Exception as err:
             _LOGGER.error("Failed to login to omnisense: %s", err)
             raise UpdateFailed("Failed to create Omnisense instance")
+        
+        if not success:
+            _LOGGER.error("Failed to login to omnisense with provided credentials")
+            raise UpdateFailed("Failed to login to Omnisense with provided credentials")
     #     """Set up the coordinator
 
     #     This is the place to set up your coordinator,
@@ -98,8 +103,14 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
         # async with async_timeout.timeout(10):
         #     return await _fetch_sensor_data(self.username, self.password, self.sites, self.sensor_ids)
         async with async_timeout.timeout(10):
-            data =  await self.omnisense.get_sensor_data(self.sites, self.sensor_ids)
-            await self.omnisense.close()  # Close the session after fetching data
+            try:
+                data =  await self.omnisense.get_sensor_data(self.sites, self.sensor_ids)
+            except Exception as err:
+                _LOGGER.error("Error fetching sensor data: %s", err)
+                raise UpdateFailed(f"Error fetching sensor data: {err}")
+            finally:
+                await self.omnisense.close()  # Always close the session 
+                           
             return data
 
 
@@ -165,31 +176,12 @@ class TemperatureSensor(SensorBase):
         return "°C"    
     
 class SensorBatteryLevel(SensorBase):
-    #battery is a ER14505 3.6V Lithium Thionyl Chloride Battery
-    voltage_soc_table = [
-        (3.65, 100), (3.60, 95), (3.58, 90),
-        (3.55, 85), (3.50, 80), (3.48, 75),
-        (3.45, 70), (3.42, 60), (3.40, 50),
-        (3.38, 40), (3.35, 30), (3.30, 20),
-        (3.20, 10), (3.10, 5), (3.00, 2),
-        (2.80, 1), (2.70, 0)
-    ]
-
     device_class = SensorDeviceClass.BATTERY
     _attr_icon = "mdi:battery"
-    # Extract separate lists for interpolation
-    voltages, soc_values = zip(*voltage_soc_table)
-
-    # Use cubic spline interpolation for smoothness
-    soc_interpolator = interp1d(voltages, soc_values, kind='cubic', fill_value="extrapolate")
 
     def __init__(self, coordinator=None, sid=None):
-        """Initialize the sensor."""
-
         super().__init__(coordinator, sid)
-
         _LOGGER.debug(f"Initializing battery entity for sensor: {self._sid}")        
-
         self._attr_unique_id = f"{self._sid}_battery"
         self._attr_name = f"{self._sensor_name} Battery Level"
         self._value = None
@@ -197,23 +189,45 @@ class SensorBatteryLevel(SensorBase):
 
     def _extract_value(self):
         self.battery_voltage = self.sensor_data.get('battery_voltage', 'Unknown')
-        self._value = self._estimate_soc(float(self.battery_voltage))      
+        try:
+            voltage = float(self.battery_voltage)
+        except Exception:
+            voltage = 0
+        self._value = self._estimate_soc(voltage)
 
     @callback
     def _handle_coordinator_update(self) -> None:
-        """Handle updated data from the coordinator."""
         self._extract_value()
         self.async_write_ha_state()
 
-    
     def _estimate_soc(self, voltage):
-        estimated_soc = self.soc_interpolator(voltage)
-        return max(0, min(100, round(float(estimated_soc), 2)))
-    
+        if voltage >= 3.60:
+            return 100
+        elif voltage >= 3.55:
+            return 90
+        elif voltage >= 3.50:
+            return 80
+        elif voltage >= 3.45:
+            return 70
+        elif voltage >= 3.40:
+            return 60
+        elif voltage >= 3.35:
+            return 50
+        elif voltage >= 3.30:
+            return 40
+        elif voltage >= 3.25:
+            return 30
+        elif voltage >= 3.20:
+            return 20
+        elif voltage >= 3.10:
+            return 10
+        else:
+            return 0
+
     @property    
     def native_value(self) -> float:
         return self._value
-    
+
     @property
     def native_unit_of_measurement(self):
         return "%"
