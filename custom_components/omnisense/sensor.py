@@ -27,6 +27,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Omnisense sensor(s) from a config entry using DataUpdateCoordinator."""
 
     coordinator = OmniSenseCoordinator(hass, entry.data)
+    await coordinator._async_setup()  # Ensure login/setup is done before first refresh
+
+    # Store the coordinator so it is not garbage collected
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN]["coordinator"] = coordinator
 
     await coordinator.async_config_entry_first_refresh()
 
@@ -54,7 +59,7 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(minutes=45),
+            update_interval=timedelta(minutes=15),
             update_method=self._omnisense_async_update_data,
         )
 
@@ -93,13 +98,15 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
         # async with async_timeout.timeout(10):
         #     return await _fetch_sensor_data(self.username, self.password, self.sites, self.sensor_ids)
         async with async_timeout.timeout(10):
-            return await self.omnisense.get_sensor_data(self.sites, self.sensor_ids)
+            data =  await self.omnisense.get_sensor_data(self.sites, self.sensor_ids)
+            await self.omnisense.close()  # Close the session after fetching data
+            return data
 
 
 class SensorBase(CoordinatorEntity, SensorEntity):
     """Base class for Omnisense entities."""
 
-    should_poll = True
+    should_poll = False
 
     def __init__(self, coordinator=None, sid=None):
 
@@ -273,7 +280,7 @@ class SensorRelativeHumidity(SensorBase):
 
 class SensorAbsoluteHumidity(SensorBase):
 
-    device_class = SensorDeviceClass.HUMIDITY
+    device_class = None
     _attr_icon = "mdi:water-percent"
 
     def __init__(self, coordinator=None, sid=None):
@@ -299,7 +306,7 @@ class SensorAbsoluteHumidity(SensorBase):
     
     @property
     def native_unit_of_measurement(self):
-        return "g/m^3" 
+        return "g/m³"
     
 class SensorWoodMoisture(SensorBase):
 
