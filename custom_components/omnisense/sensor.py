@@ -58,7 +58,7 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(minutes=1),
+            update_interval=timedelta(minutes=15),
             update_method=self._omnisense_async_update_data,
         )
 
