@@ -2,8 +2,7 @@ import os
 import logging
 import requests
 import async_timeout
-from datetime import timedelta, datetime
-from zoneinfo import ZoneInfo
+from datetime import timedelta, datetime, timezone
 import aiohttp
 import asyncio
 from bs4 import BeautifulSoup
@@ -27,9 +26,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
     coordinator = OmniSenseCoordinator(hass, entry.data)
     await coordinator._async_setup()  # Ensure login/setup is done before first refresh
 
-    # Store the coordinator so it is not garbage collected
+    # Store the coordinator keyed by entry_id so multiple config entries
+    # can coexist and async_unload_entry can find it.
     hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN]["coordinator"] = coordinator
+    hass.data[DOMAIN][entry.entry_id] = coordinator
 
     await coordinator.async_config_entry_first_refresh()
 
@@ -249,8 +249,10 @@ class SensorLastActivity(SensorBase):
 
         last_activity = self._get_sensor_data('last_activity')          
 
-        naive_dt = datetime.strptime(last_activity, "%y-%m-%d %H:%M:%S") #time stamp is in the format "YY-MM-DD HH:MM:SS"
-        self._value = naive_dt.replace(tzinfo=ZoneInfo("America/Los_Angeles"))
+        # omnisense.com emits naive timestamps in UTC. Label them as UTC
+        # and let Home Assistant render in the user's local timezone.
+        naive_dt = datetime.strptime(last_activity, "%y-%m-%d %H:%M:%S")
+        self._value = naive_dt.replace(tzinfo=timezone.utc)
         
         _LOGGER.debug(f"Updating sensor: {self._attr_name} = last activity at {self._value}")
 

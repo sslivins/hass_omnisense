@@ -13,9 +13,9 @@ PLATFORMS = [Platform.SENSOR]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Omnisense from a config entry."""
-    # Store the entry data if needed
     hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = entry.data
+    # The coordinator (created by the sensor platform) will register
+    # itself at hass.data[DOMAIN][entry.entry_id].
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
@@ -32,8 +32,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
     )
     if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id, None)
-        coordinator = hass.data[DOMAIN].pop("coordinator", None)
+        coordinator = hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
         if coordinator is not None and getattr(coordinator, "omnisense", None) is not None:
             try:
                 await coordinator.omnisense.close()
