@@ -32,6 +32,12 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
     )
     if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id)
+        hass.data[DOMAIN].pop(entry.entry_id, None)
+        coordinator = hass.data[DOMAIN].pop("coordinator", None)
+        if coordinator is not None and getattr(coordinator, "omnisense", None) is not None:
+            try:
+                await coordinator.omnisense.close()
+            except Exception as err:  # pragma: no cover - best-effort cleanup
+                _LOGGER.warning("Error closing Omnisense session on unload: %s", err)
 
     return unload_ok

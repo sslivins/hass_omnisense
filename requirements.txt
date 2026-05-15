@@ -3,4 +3,4 @@ homeassistant
 python-dotenv
 Requests
 voluptuous
-pyomnisense
+pyomnisense>=0.2.0

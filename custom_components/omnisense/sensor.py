@@ -15,7 +15,7 @@ from homeassistant.core import callback
 from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
 from .const import CONF_SELECTED_SITES, CONF_SELECTED_SENSORS
 
-from pyomnisense import Omnisense
+from pyomnisense import Omnisense, OmnisenseAuthError, OmnisenseError
 
 from .const import DOMAIN
 
@@ -73,11 +73,13 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
 
         try:
             success = await self.omnisense.login(self.username, self.password)
-            await self.omnisense.close() 
-        except Exception as err:
-            _LOGGER.error("Failed to login to omnisense: %s", err)
-            raise UpdateFailed("Failed to create Omnisense instance")
-        
+        except OmnisenseAuthError as err:
+            _LOGGER.error("Omnisense login rejected: %s", err)
+            raise UpdateFailed("Failed to login to Omnisense with provided credentials")
+        except OmnisenseError as err:
+            _LOGGER.error("Omnisense login failed: %s", err)
+            raise UpdateFailed(f"Failed to login to Omnisense: {err}")
+
         if not success:
             _LOGGER.error("Failed to login to omnisense with provided credentials")
             raise UpdateFailed("Failed to login to Omnisense with provided credentials")
@@ -99,18 +101,17 @@ class OmniSenseCoordinator(DataUpdateCoordinator):
         # Note: asyncio.TimeoutError and aiohttp.ClientError are already
         # handled by the data update coordinator.
         _LOGGER.debug(f"Fetching new sensor data")
-        # async with async_timeout.timeout(10):
-        #     return await _fetch_sensor_data(self.username, self.password, self.sites, self.sensor_ids)
-        async with async_timeout.timeout(10):
+        async with async_timeout.timeout(30):
             try:
-                data =  await self.omnisense.get_sensor_data(self.sites, self.sensor_ids)
+                data = await self.omnisense.get_sensor_data(self.sites, self.sensor_ids)
                 _LOGGER.debug(f"Fetched sensor data: {data}")
-            except Exception as err:
+            except OmnisenseAuthError as err:
+                _LOGGER.error("Omnisense authentication failed during fetch: %s", err)
+                raise UpdateFailed(f"Authentication failed: {err}")
+            except OmnisenseError as err:
                 _LOGGER.error("Error fetching sensor data: %s", err)
                 raise UpdateFailed(f"Error fetching sensor data: {err}")
-            finally:
-                await self.omnisense.close()  # Always close the session 
-                           
+
             return data
 
 
