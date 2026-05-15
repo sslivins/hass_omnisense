@@ -2,7 +2,7 @@ import os
 import logging
 import requests
 import async_timeout
-from datetime import timedelta, datetime, timezone
+from datetime import timedelta, datetime
 import aiohttp
 import asyncio
 from bs4 import BeautifulSoup
@@ -170,7 +170,7 @@ class TemperatureSensor(SensorBase):
         self._extract_value()
 
     def _extract_value(self):
-        self._value = self._get_sensor_data('temperature')
+        self._value = self._get_sensor_data('temperature', error_value=None)
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -203,12 +203,11 @@ class SensorBatteryLevel(SensorBase):
         self._extract_value()
 
     def _extract_value(self):
-        self.battery_voltage = self._get_sensor_data('battery_voltage')        
-        
-        try:
-            voltage = float(self.battery_voltage)
-        except Exception:
-            voltage = 0
+        # pyomnisense >= 0.3.0 returns battery_voltage as Optional[float].
+        self.battery_voltage = self._get_sensor_data(
+            'battery_voltage', error_value=None,
+        )
+        voltage = self.battery_voltage if self.battery_voltage is not None else 0
         self._value = self._estimate_soc(voltage)
 
     @callback
@@ -246,14 +245,11 @@ class SensorLastActivity(SensorBase):
         self._extract_value()
 
     def _extract_value(self):
+        # pyomnisense >= 0.3.0 returns last_activity as a tz-aware UTC
+        # datetime (or None when the cell is missing). HA renders it in
+        # the user's local timezone via SensorDeviceClass.TIMESTAMP.
+        self._value = self._get_sensor_data('last_activity', error_value=None)
 
-        last_activity = self._get_sensor_data('last_activity')          
-
-        # omnisense.com emits naive timestamps in UTC. Label them as UTC
-        # and let Home Assistant render in the user's local timezone.
-        naive_dt = datetime.strptime(last_activity, "%y-%m-%d %H:%M:%S")
-        self._value = naive_dt.replace(tzinfo=timezone.utc)
-        
         _LOGGER.debug(f"Updating sensor: {self._attr_name} = last activity at {self._value}")
 
     @callback
@@ -281,7 +277,7 @@ class SensorRelativeHumidity(SensorBase):
         self._extract_value()
 
     def _extract_value(self):
-        self._value = self._get_sensor_data('relative_humidity')           
+        self._value = self._get_sensor_data('relative_humidity', error_value=None)           
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -345,7 +341,7 @@ class SensorWoodMoisture(SensorBase):
 
     def _extract_value(self):
 
-        self._value = self._get_sensor_data('wood_pct')
+        self._value = self._get_sensor_data('wood_pct', error_value=None)
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -377,7 +373,7 @@ class SensorDewPoint(SensorBase):
 
     def _extract_value(self):
         
-        self._value = self._get_sensor_data('dew_point')           
+        self._value = self._get_sensor_data('dew_point', error_value=None)           
         
 
     @callback
@@ -407,10 +403,9 @@ class SensorBatteryVoltage(SensorBase):
         self._extract_value()
 
     def _extract_value(self):
-        try:
-            self._value = round(float(self._get_sensor_data('battery_voltage')), 1)
-        except Exception:
-            self._value = None
+        # pyomnisense >= 0.3.0 returns battery_voltage as Optional[float].
+        value = self._get_sensor_data('battery_voltage', error_value=None)
+        self._value = round(value, 1) if value is not None else None
 
     @callback
     def _handle_coordinator_update(self) -> None:

@@ -14,7 +14,7 @@
     "voluptuous",
     "numpy",
     "scipy",
-    "pyomnisense>=0.2.0"
+    "pyomnisense>=0.3.0"
   ],
-  "version": "0.1.14"
+  "version": "0.1.15"
 }
