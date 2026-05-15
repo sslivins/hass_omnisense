@@ -6,7 +6,7 @@ from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
 from .const import CONF_SELECTED_SITES, CONF_SELECTED_SENSORS
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.selector import SelectSelector
-from pyomnisense import Omnisense
+from pyomnisense import Omnisense, OmnisenseAuthError, OmnisenseError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,23 +26,30 @@ class OmnisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self.username = user_input.get(CONF_USERNAME)
             self.password = user_input.get(CONF_PASSWORD)
 
+            login_ok = False
             try:
-                 await self.omnisense.login(self.username, self.password)
-            except Exception as err:  # or a more specific exception if known
-                _LOGGER.error("Failed to create Omnisense instance: %s", err)
+                login_ok = await self.omnisense.login(self.username, self.password)
+            except OmnisenseAuthError as err:
+                _LOGGER.error("Omnisense login rejected: %s", err)
                 errors["base"] = "omnisense_login_failed"
-   
-            # Validate credentials and fetch available sites
-            try:
-                sites = await self.omnisense.get_site_list()
-                if sites:
-                    self.available_sites = sites
-                    return await self.async_step_select_site()
-                else:
-                    errors["base"] = "no_sites_found"
-            except Exception as err:  # or a more specific exception if known
-                _LOGGER.error("Error fetching site list: %s", err)
-                errors["base"] = "failed_to_get_sites"
+            except OmnisenseError as err:
+                _LOGGER.error("Omnisense login failed: %s", err)
+                errors["base"] = "omnisense_login_failed"
+
+            if not errors and not login_ok:
+                errors["base"] = "omnisense_login_failed"
+
+            if not errors:
+                try:
+                    sites = await self.omnisense.get_site_list()
+                    if sites:
+                        self.available_sites = sites
+                        return await self.async_step_select_site()
+                    else:
+                        errors["base"] = "no_sites_found"
+                except OmnisenseError as err:
+                    _LOGGER.error("Error fetching site list: %s", err)
+                    errors["base"] = "failed_to_get_sites"
 
         schema = vol.Schema({
             vol.Required(CONF_USERNAME): str,
